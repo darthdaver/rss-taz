@@ -1,0 +1,23 @@
+from enum import Enum
+
+class Net(str, Enum):
+    EDGE = "edge"
+    LANE = "lane"
+    SOURCE = "src"
+    DESTINATION = "dst"
+    DISTANCE = "distance"
+    AREA = "area"
+    BOUNDARY = "boundary"
+    CENTROIDS = "centroids"
+    GEOMETRY = "geometry"
+    ZIP = "zip"
+    LENGTH = "length"
+    TAZ = "taz"
+    COORDINATES = "coordinates"
+    TAZ_ID = "taz_id"
+    EDGE_ID = "edge_id"
+    EDGES = "edges"
+    SPEED = "speed"
+    EXPECTED_TRAVEL_TIME = "expected_travel_time"
+    MEAN_TRAVEL_TIME = "mean_travel_time"
+    STD_TRAVEL_TIME = "std_travel_time"

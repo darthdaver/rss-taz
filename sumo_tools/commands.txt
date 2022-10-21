@@ -1,0 +1,21 @@
+POLYCONVERT
+***********
+
+Description
+-----------
+Convert map in shapefile format to sumo net format
+
+Reference
+---------
+https://sumo.dlr.de/docs/polyconvert.html
+
+Example
+-------
+polyconvert --shapefile-prefixes [path_to_shape_file_name] -o [path_to_output_net_file] --net-file [path_to_the_net_file]
+
+Parameters
+----------
+path_to_shape_file_name(without_extension) --> /Users/username/shape_file_directory/shape_file_name [no extension, just the name!]
+path_to_output_net_file --> /Users/username/output_folder/output_file_name.poi.xml [the extension is .poi.xml]
+
+Other

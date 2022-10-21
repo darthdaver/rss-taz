@@ -1,0 +1,8 @@
+{
+  "route_length_distribution" : [
+        [0.3, "short"],
+        [0.7, "normal"],
+        [0.9, "long"],
+        [ 1, "extreme"]
+    ]
+}

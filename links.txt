@@ -1,0 +1,65 @@
+SUMO
+****
+GitHub Repository
+-----------------
+- https://github.com/eclipse/sumo
+
+Installation
+------------
+- https://sumo.dlr.de/docs/Installing/index.html [quick installation]
+- https://sumo.dlr.de/docs/Installing/MacOS_Build.html [macOS advanced build]
+- https://github.com/DLR-TS/homebrew-sumo#usage [quick installation with GDAL]
+
+Documentation
+-------------
+- O/D Matrices:
+    - https://sumo.dlr.de/docs/Demand/Importing_O/D_Matrices.html
+- configuration:
+    - https://sumo.dlr.de/docs/sumo.html
+    - https://sumo.dlr.de/docs/Simulation/Basic_Definition.html
+- OpenStreetMap:
+    - https://sumo.dlr.de/docs/Networks/Import/OpenStreetMapDownload.html
+    - https://sumo.dlr.de/docs/Networks/Import/OpenStreetMap.html
+    - https://sumo.dlr.de/docs/Tutorials/Import_from_OpenStreetMap.html
+- Routing:
+    - https://sumo.dlr.de/docs/Simulation/Routing.html
+    - https://sumo.dlr.de/docs/Demand/Shortest_or_Optimal_Path_Routing.html#trip_definitions
+- Persons:
+    - https://sumo.dlr.de/docs/Specification/Persons.html
+- Vehicles:
+    - https://sumo.dlr.de/docs/Definition_of_Vehicles%2C_Vehicle_Types%2C_and_Routes.html
+- Others:
+    - https://sumo.dlr.de/docs/Simulation/SaveAndLoad.html
+    - https://sumo.dlr.de/docs/Simulation/Routing.html
+
+XML
+---
+- https://sumo.dlr.de/docs/Specification/index.html
+- https://sumo.dlr.de/xsd/
+
+Tools
+-----
+- randomTrips:
+    - https://sumo.dlr.de/docs/Tools/Trip.html
+- polyconvert:
+    - https://sumo.dlr.de/docs/polyconvert.html
+
+Libraries
+---------
+- TraCI:
+    - https://sumo.dlr.de/docs/TraCI.html
+    - https://sumo.dlr.de/pydoc/traci.html
+- sumolib:
+    - https://sumo.dlr.de/docs/Tools/Sumolib.html
+    - https://sumo.dlr.de/pydoc/sumolib.html
+- libsumo:
+    - https://sumo.dlr.de/docs/Libsumo.html
+
+
+SFCTA
+*****
+- https://www.sfcta.org/
+- https://www.sfcta.org/projects/tncs-today
+- http://tncstoday.sfcta.org/
+- https://www.sfcta.org/sites/default/files/2019-02/TNCs_Today_112917_0.pdf
+- https://github.com/orgs/sfcta/repositories
