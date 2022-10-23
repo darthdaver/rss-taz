@@ -53,7 +53,7 @@ import requests
 
 
 class Simulator:
-    def __init__(self, traci_port):
+    def __init__(self):
         manager = Manager()
         self.__customer_setup = utils.read_setup(FileSetup.CUSTOMER.value)
         self.__driver_setup = utils.read_setup(FileSetup.DRIVER.value)
@@ -68,8 +68,8 @@ class Simulator:
         self.__traffic_counter = 0
         self.__sim_drivers_ids = []
         self.__sim_customers_ids = []
-        self.__drivers = manager.dict()
-        self.__customers = manager.dict()
+        self.__drivers = {}
+        self.__customers = {}
         self.__drivers_by_state = {k.value: [] for k in DriverState}
         self.__customers_by_state = {k.value: [] for k in CustomerState}
         self.__printer = Printer()
@@ -86,8 +86,11 @@ class Simulator:
         print("START TRACI")
         result = self.__pool.apply_async(tasks.start_traci, args=(self.__lock,))
         result.wait()
+        #print("START SUMO NET")
+        #result = self.__pool.apply_async(tasks.start_sumo_net, args=(self.__lock,))
+        #result.wait()
 
-        print("START TASK")
+        """print("START TASK")
         for i in range(20):
             print(f"Check: {i}")
             self.__check_customers_list()
@@ -96,13 +99,13 @@ class Simulator:
             result = self.__pool.apply_async(tasks.next_traci_step, args=(self.__lock,))
             result.wait()
             print(result)
-        print("END")
+        print("END")"""
 
     def __check_customers_list(self):
-        traci_customers_ids = utils.traci_api_call(Api.CUSTOMERS_ID_LIST)[ApiIdentifier.DATA.value]
+        traci_customers_ids = utils.traci_api_call(Api.CUSTOMERS_ID_LIST)
         if not set(traci_customers_ids) == set(self.__sim_customers_ids):
             customers_diff = list(set(self.__sim_customers_ids).symmetric_difference(set(traci_customers_ids)))
-            result = self.__pool.starmap_async(
+            remove_customers_list = self.__pool.starmap(
                 tasks.solve_customers_inconsistencies,
                 zip(
                     customers_diff,
@@ -111,15 +114,13 @@ class Simulator:
                     repeat(self.__lock)
                 )
             )
-            result.wait()
-            remove_customers_list = result.get()
             for customer_id in remove_customers_list:
                 if not customer_id == -1:
                     self.__remove_customer_by_state(customer_id)
 
 
     def __check_drivers_list(self):
-        traci_drivers_ids = utils.traci_api_call(Api.DRIVERS_ID_LIST)[ApiIdentifier.DATA.value]
+        traci_drivers_ids = utils.traci_api_call(Api.DRIVERS_ID_LIST)
         if not set(traci_drivers_ids) == set(self.__sim_drivers_ids):
             drivers_diff = list(set(self.__sim_drivers_ids).symmetric_difference(set(traci_drivers_ids)))
             result = self.__pool.starmap_async(
@@ -162,7 +163,7 @@ class Simulator:
             dst_pos: float,
             state: Type[CustomerState] = CustomerState.ACTIVE
     ):
-        traci_customers_ids = utils.traci_api_call(Api.CUSTOMERS_ID_LIST)[ApiIdentifier.DATA.value]
+        traci_customers_ids = utils.traci_api_call(Api.CUSTOMERS_ID_LIST)
         if customer_id in traci_customers_ids:
             customer = Customer(
                 float(timestamp),
@@ -194,6 +195,7 @@ class Simulator:
         )
         result.wait()
         ride_list = result.get()
+        print(ride_list)
         for ride in ride_list:
             self.__provider.receive_request(ride)
             self.__energy_indexes.received_request(timestamp)
@@ -208,7 +210,7 @@ class Simulator:
             dst_pos: float,
             state: Type[DriverState] = DriverState.IDLE
     ):
-        traci_drivers_ids = utils.traci_api_call(Api.DRIVERS_ID_LIST)[ApiIdentifier.DATA.value]
+        traci_drivers_ids = utils.traci_api_call(Api.DRIVERS_ID_LIST)
         if driver_id in traci_drivers_ids:
             route = self.__net.generate_sim_route_from_edge_id_list(
                 timestamp,
@@ -242,7 +244,9 @@ class Simulator:
             if not customer_info[CustomerIdentifier.CUSTOMER_STATE.value] == CustomerState.INACTIVE:
                 customer_edge_id = utils.traci_api_call(
                     Api.CUSTOMER_CURRENT_EDGE_ID,
-                    { ApiIdentifier.CUSTOMER_ID.value: customer_id }
+                    {
+                        ApiIdentifier.CUSTOMER_ID.value: customer_id
+                    }
                 )
                 customer_taz_id = self.__net.get_taz_id_from_edge_id(
                     customer_edge_id,
@@ -272,7 +276,9 @@ class Simulator:
                 driver_info = self.__drivers[driver_id].get_info()
                 driver_edge_id = utils.traci_api_call(
                     Api.DRIVER_CURRENT_EDGE_ID,
-                    { ApiIdentifier.DRIVER_ID.value: driver_id }
+                    {
+                        ApiIdentifier.DRIVER_ID.value: driver_id
+                    }
                 )
                 driver_taz_id = self.__net.get_taz_id_from_edge_id(driver_edge_id, NetType.BOUNDARY_NET)
                 if not driver_info[CustomerIdentifier.CUSTOMER_STATE.value] == CustomerState.INACTIVE:
@@ -420,7 +426,9 @@ class Simulator:
             customer_id = customer_info[CustomerIdentifier.CUSTOMER_ID.value]
             customer_edge_id = utils.traci_api_call(
                 Api.CUSTOMER_CURRENT_EDGE_ID,
-                { ApiIdentifier.CUSTOMER_ID.value: customer_id }
+                {
+                    ApiIdentifier.CUSTOMER_ID.value: customer_id
+                }
             )
             customer_taz_id = self.__net.get_taz_id_from_edge_id(customer_edge_id, NetType.BOUNDARY_NET)
             taz_info = self.__net.get_taz_info(customer_taz_id)
@@ -461,11 +469,15 @@ class Simulator:
                     customer_dst_pos = customer_info[CustomerIdentifier.DST_POS.value]
                     driver_edge_id = utils.traci_api_call(
                         Api.DRIVER_CURRENT_EDGE_ID,
-                        { ApiIdentifier.DRIVER_ID.value: driver_id }
+                        {
+                            ApiIdentifier.DRIVER_ID.value: driver_id
+                        }
                     )
                     driver_src_pos = utils.traci_api_call(
                         Api.DRIVER_CURRENT_POS,
-                        { ApiIdentifier.DRIVER_ID.value: driver_id }
+                        {
+                            ApiIdentifier.DRIVER_ID.value: driver_id
+                        }
                     )
                     meeting_route = self.__net.generate_sim_route_from_src_dst_edge_ids(
                         timestamp,
@@ -566,8 +578,19 @@ class Simulator:
             delayed(__process_pending_request)(ride_info)
             for ride_info in pending_requests
         )"""
-        p = Pool(self.__cpu_cores)
-        p.map(__process_pending_request, pending_requests)
+        for request in pending_requests:
+            __process_pending_request(request)
+        """result = self.__pool.starmap_async(
+            tasks.solve_customers_inconsistencies,
+            zip(
+                customers_diff,
+                repeat(traci_customers_ids),
+                repeat(self.__sim_customers_ids),
+                repeat(self.__lock)
+            )
+        )
+        result.wait()
+        remove_customers_list = result.get()"""
 
     def __move_driver_to_taz(
             self,
@@ -578,11 +601,15 @@ class Simulator:
         driver = self.__drivers[driver_id]
         driver_edge_id = utils.traci_api_call(
             Api.DRIVER_CURRENT_EDGE_ID,
-            { ApiIdentifier.DRIVER_ID.value: driver_id }
+            {
+                ApiIdentifier.DRIVER_ID.value: driver_id
+            }
         )
         driver_pos = utils.traci_api_call(
             Api.DRIVER_CURRENT_POS,
-            { ApiIdentifier.DRIVER_ID.value: driver_id }
+            {
+                ApiIdentifier.DRIVER_ID.value: driver_id
+            }
         )
         random_route = self.__net.generate_random_sim_route_in_taz(
             timestamp,
@@ -639,7 +666,9 @@ class Simulator:
             personality = customer.get_info()[HumanEnum.PERSONALITY.value]
             customer_edge_id = utils.traci_api_call(
                 Api.CUSTOMER_CURRENT_EDGE_ID,
-                { ApiIdentifier.CUSTOMER_ID.value: customer_id }
+                {
+                    ApiIdentifier.CUSTOMER_ID.value: customer_id
+                }
             )
             customer_taz_id = self.__net.get_taz_id_from_edge_id(customer_edge_id, NetType.BOUNDARY_NET)
             taz_info = self.__net.get_taz_info(customer_taz_id)
@@ -684,9 +713,11 @@ class Simulator:
     ):
         driver_edge_id = utils.traci_api_call(
             Api.DRIVER_CURRENT_EDGE_ID,
-            { ApiIdentifier.DRIVER_ID.value: driver_id }
+            {
+                ApiIdentifier.DRIVER_ID.value: driver_id
+            }
         )
-        driver_edge_outgoings = utils.sumo_net_api_call(
+        driver_edge_ids_outgoings = utils.sumo_net_api_call(
             Api.GET_EDGE_OUTGOINGS,
             {
                 ApiIdentifier.EDGE_ID.value: driver_edge_id
@@ -694,13 +725,14 @@ class Simulator:
         )
         driver_pos = utils.traci_api_call(
             Api.DRIVER_CURRENT_POS,
-            { ApiIdentifier.DRIVER_ID.value: driver_id }
+            {
+                ApiIdentifier.DRIVER_ID.value: driver_id
+            }
         )
         route_src_edge_id = route[RouteIdentifier.SRC_EDGE_ID.value]
         route_dst_edge_id = route[RouteIdentifier.DST_EDGE_ID.value]
         route_dst_pos = route[RouteIdentifier.DST_POS.value]
-        outgoings_driver_current_edge_ids = list(map(lambda e: e.getID(), driver_edge_outgoings))
-        assert route_src_edge_id in outgoings_driver_current_edge_ids, f"Simulator.__refine_ride_route - unexpected {driver_id} position with respect to destination route."
+        assert route_src_edge_id in driver_edge_ids_outgoings, f"Simulator.__refine_ride_route - unexpected {driver_id} position with respect to destination route."
         refined_route = self.__net.generate_sim_route_from_src_dst_edge_ids(
             timestamp,
             driver_edge_id,
@@ -730,6 +762,7 @@ class Simulator:
         if customer_id not in self.__customers_by_state[customer_info[HumanEnum.HUMAN_STATE.value].value]:
             #f"{customer_id} with state {customer_info[HumanEnum.HUMAN_STATE.value]}")
             pass
+        print(customer_info[HumanEnum.HUMAN_STATE.value].value)
         self.__customers_by_state[customer_info[HumanEnum.HUMAN_STATE.value].value].remove(customer_id)
         self.__customers_by_state[CustomerState.INACTIVE.value].append(customer_id)
         customer.set_state(CustomerState.INACTIVE)
@@ -738,7 +771,9 @@ class Simulator:
         if customer_id in traci_customers_list:
             utils.traci_api_call(
                 Api.REMOVE_CUSTOMER,
-                { ApiIdentifier.CUSTOMER_ID.value: customer_id }
+                {
+                    ApiIdentifier.CUSTOMER_ID.value: customer_id
+                }
             )
         else:
             #print(f"Person {customer_id} already removed..."
@@ -1595,7 +1630,7 @@ class Simulator:
             except Exception as e:
                 #self.print_drivers()
                 print(self.__drivers_by_state)
-                #print(self.__customers_by_state)
+                print(self.__customers_by_state)
                 print(e)
                 self.__printer.export_global_indicators()
                 self.__printer.export_global_indicators_v2()
@@ -1653,6 +1688,9 @@ class Simulator:
 
     def print_customers_by_state(self):
         print(self.__customers_by_state)
+
+    def get_customers(self):
+        return self.__customers
 
     def get_drivers(self):
         return self.__drivers

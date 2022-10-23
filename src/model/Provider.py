@@ -1,5 +1,4 @@
 import random
-import traci
 from itertools import repeat
 from multiprocessing import Pool, Lock
 from typing import Type, Dict, Union
@@ -31,10 +30,9 @@ from sumolib.net import Net as SumoNet
 import sumolib
 import time
 from joblib import wrap_non_picklable_objects
-
-sumo_net = sumolib.net.readNet(FileSetup.NET_SUMO.value)
-max_driver_distance = 0
-counter_impossible_route = 0
+from src.task import tasks
+from src.enum.identifiers.Api import Api as ApiIdentifier
+from src.enum.api.Api import Api
 
 class Provider:
     def __init__(
@@ -45,10 +43,8 @@ class Provider:
         self.__rides_by_state: Dict[str, list[str]] = {k.value: [] for k in RideState}
         self.__fare: FareSetup = provider_setup[ProviderIdentifier.FARE.value]
         self.__request: RequestSetup = provider_setup[ProviderIdentifier.REQUEST.value]
-        self.__sumo_net: Type[SumoNet] = sumolib.net.readNet(FileSetup.NET_SUMO, withInternal=True)
         self.__cpu_cores = multiprocessing.cpu_count()
-        global max_driver_distance
-        max_driver_distance = self.__request[ProviderIdentifier.MAX_DRIVER_DISTANCE.value]
+        self.max_driver_distance = self.__request[ProviderIdentifier.MAX_DRIVER_DISTANCE.value]
 
 
     def add_ride(
@@ -85,6 +81,7 @@ class Provider:
             elif agent_type == HumanType.CUSTOMER:
                 if ride_info[RideIdentifier.CUSTOMER_ID.value] == agent_info[HumanIdentifier.HUMAN_ID.value]:
                     found_ride_info = ride_info
+
         assert agent_type in [HumanType.DRIVER, HumanType.CUSTOMER], f"Provider.find_ride_by_agent_id - unexpected agent type {agent_type}"
         state = None
         found_ride_info = None
@@ -109,6 +106,8 @@ class Provider:
         for ride_id in self.__rides_by_state[state.value]:
             if found_ride_info is None:
                 __search_ride(ride_id)
+            else:
+                break
         return found_ride_info
 
     def compute_balance(
@@ -175,6 +174,7 @@ class Provider:
             delayed(__filter_pending_rides)(ride_id)
             for ride_id in rides_array
         )"""
+
         for ride_id in rides_array:
             __filter_pending_rides(ride_id)
         return pending_rides_info
@@ -289,7 +289,6 @@ class Provider:
         ride = self.__rides[ride_info[RideIdentifier.RIDE_ID.value]]
         ride_info = ride.update_pending(timestamp)
         self.__nearby_drivers(
-            timestamp,
             ride_info,
             meeting_edge_id,
             available_drivers_info,
@@ -422,7 +421,8 @@ class Provider:
     ):
         def __filter_free_drivers(driver_info: Type[DriverInfo]):
             nonlocal free_drivers
-            if driver_info[DriverIdentifier.DRIVER_ID.value] in traci.vehicle.getIDList():
+            traci_drivers_ids_list = utils.traci_api_call(Api.DRIVERS_ID_LIST)
+            if driver_info[DriverIdentifier.DRIVER_ID.value] in traci_drivers_ids_list:
                 free_drivers.append(driver_info)
         free_drivers = []
         """Parallel(
@@ -460,7 +460,6 @@ class Provider:
 
     def __nearby_drivers(
             self,
-            timestamp: float,     ###
             ride_info: Type[RideInfo],
             meeting_edge_id: str,
             drivers_info: Type[DriverInfo],
@@ -469,35 +468,18 @@ class Provider:
     ):
         drivers_info_array = list(drivers_info.values())
         random.shuffle(drivers_info_array)
-        """Parallel(
-                n_jobs=self.__cpu_cores,
-        )(
-            delayed(collect_candidates)(drivers_info, meeting_edge_id, self.__sumo_net)
-            for drivers_info in drivers_info_array
-            #if counter_impossible_route < 2
-        )"""
-
-        """for drivers_info in drivers_info_array:
-            if counter_impossible_route < 2:
-                __collect_candidates(drivers_info)
-        if len(ride_info[RideIdentifier.REQUEST.value][RequestIdentifier.DRIVERS_CANDIDATE.value]) == 0:
-            #print(f"Provider.__nearby_drivers - {ride_info[RideIdentifier.CUSTOMER_ID.value]} has 0 candidates.")
-            self.set_ride_request_state(ride_info[RideIdentifier.RIDE_ID.value], RideRequestState.ROUTE_NOT_FOUND)
-        self.__rides[ride_info[RideIdentifier.RIDE_ID.value]].sort_candidates()"""
-        #print(sys.getrecursionlimit())
-        with process_manager() as manager:
-            #shared_traci = manager.traci()
-            shared_traci = manager.traci
-            shared_net = manager.sumo_net
-            #processes = [Process(target=collect_candidates, args=(driver_info, meeting_edge_id, shared_net)) for driver_info in drivers_info]
-            #for process in processes:
-            #    process.start()
-            #for process in processes:
-            #    process.join()
-            p = ProcessPool(nodes=self.__cpu_cores)
-            ride_candidates = p.map(collect_candidates, drivers_info_array, repeat(meeting_edge_id))
-        #for candidate in ride_candidates:
-        #    ride_info = self.add_candidate_to_ride(ride_info[RideIdentifier.RIDE_ID.value], candidate)
+        ride_candidates = pool.starmap(
+            tasks.collect_candidates,
+            zip(
+                drivers_info_array,
+                repeat(meeting_edge_id),
+                repeat(self.max_driver_distance),
+                repeat(lock)
+            )
+        )
+        for candidate in ride_candidates:
+            if candidate is not None:
+                ride_info = self.add_candidate_to_ride(ride_info[RideIdentifier.RIDE_ID.value], candidate)
 
     def __ride_not_served(
             self,
@@ -514,18 +496,3 @@ class Provider:
             if candidate and candidate[RequestIdentifier.CANDIDATE_ID.value] in free_drivers_ids:
                 return candidate
         return None
-
-
-def collect_candidates(driver_info: Type[DriverInfo], meeting_edge_id): #, max_driver_distance):
-    #loaded_net = dill.loads(shared_sumo_net)
-    print(driver_info)
-    print(meeting_edge_id)
-    #print(max_driver_distance)
-    #driver_id = driver_info[DriverIdentifier.DRIVER_ID.value]
-    #driver_edge_id = driver_info[DriverIdentifier.CURRENT_EDGE_ID.value]
-    #driver_edge = shared_sumo_net.getEdge(driver_edge_id)
-    #meeting_edge = shared_sumo_net.getEdge(meeting_edge_id)
-    #route, cost = shared_sumo_net.getOptimalPath(driver_edge, meeting_edge)
-    #if route is not None and cost <= max_driver_distance:
-        #return {
-            #}

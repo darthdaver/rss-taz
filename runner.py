@@ -5,17 +5,17 @@
 from __future__ import absolute_import
 from __future__ import print_function
 from src.controller.Simulator_new import Simulator
-from src.settings.Settings import Settings
+#from src.settings.Settings import Settings
 
-env_settings = Settings()
-TRACI_PORT = env_settings.TRACI_PORT
+#env_settings = Settings()
+#TRACI_PORT = env_settings.TRACI_PORT
 
 
 if __name__ == "__main__":
     print("SIMULATOR START")
-    simulator = Simulator(TRACI_PORT)
+    simulator = Simulator()
     print(f"INIT SIMULATOR")
-    #simulator.run()
+    simulator.run()
 
 # @file    runner.py
 # @author  Davide

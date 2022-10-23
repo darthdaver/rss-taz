@@ -21,9 +21,18 @@ class Api(str, Enum):
     CLOSE_TRACI = "close_traci"
     GET_ROUTE_INDEX = "get_route_index"
     CUSTOMER_GET_EDGES = "customer_get_edges"
+    ROUTE_ID_LIST = "route_id_list"
+    ADD_ROUTE = "add_route"
+    DRIVING_DISTANCE = "driving_distance"
+
 
     # SUMO_NET
+    CHECK_EDGE_ALLOWS_VEHICLE = "check_edge_allows_vehicle"
+    GET_EDGES = "get_edges"
+    GET_EDGE_LANE_ID = "get_edge_lane_id"
+    GET_EDGE_LENGTH = "get_edge_length"
     GET_EDGE_OUTGOINGS = "get_edge_outgoings"
-    GET_EDGE_LENGTH = "get_edge_outgoings"
     GET_OPTIMAL_PATH = "get_optimal_path"
+    GET_ROUTE_LENGTH = "get_route_length"
+    HAS_EDGE = "has_edge"
     START_SUMO_NET = "start_sumo_net"

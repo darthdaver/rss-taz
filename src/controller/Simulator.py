@@ -530,6 +530,7 @@ class Simulator:
 
             if accept:
                 customer_info = customer.update_pending()
+                print(f"Pending: {customer_info['id']}")
                 available_drivers_info = self.__get_available_drivers(area_id)
                 self.__provider.process_customer_request(timestamp, self.__sumo_net, ride_info, customer_info["current_coordinates"], available_drivers_info)
                 self.__customers_by_state[CustomerState.ACTIVE.value].remove(customer_info["id"])

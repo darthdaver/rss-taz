@@ -2,6 +2,8 @@ from enum import Enum
 
 class Api(str, Enum):
     DATA = "data"
+    OK = "ok"
+    KO = "ko"
 
     # TRACI
     COMMAND = "command"
@@ -16,7 +18,12 @@ class Api(str, Enum):
     DRIVING_STAGE = "driving_stage"
     WAITING_STAGE = "waiting_stage"
     STAGE_NUM = "stage_num"
+    DST_POS = "dst_pos"
 
     # SUMO_NET
     EDGE_ID = "edge_id"
     SRC_EDGE_ID = "src_edge_id"
+    VEHICLE_CLASS = "vehicle_class"
+    LANE_NUM = "lane_num"
+    ROUTE_STR = "route_str"
+    SEPARATOR = "*"

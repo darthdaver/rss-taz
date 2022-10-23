@@ -24,6 +24,8 @@ import sumolib
 from sumolib.net.edge import Edge as SumoEdge
 from sumolib.net.lane import Lane as SumoLane
 import numpy as np
+from src.enum.identifiers.Api import Api as ApiIdentifier
+from src.enum.api.Api import Api
 
 class MobilityGenerator():
     def __init__(self, begin, end):
@@ -31,7 +33,6 @@ class MobilityGenerator():
         self.__driver_counter = 0
         self.__begin = begin
         self.__end = end
-        self.__sumo_net = sumolib.net.readNet(FileSetup.NET_SUMO.value, withInternal=True)
         self.__generation_dict = {str(i): {HumanEnum.CUSTOMERS.value: [], HumanEnum.DRIVERS.value: []} for i in range(begin, end)}
         self.__ride_setup = utils.read_file_from_absolute_path_to_file(FileSetup.MOBILITY_RIDE.value, FileFormat.JSON)
         self.__pickups_file = utils.read_file_from_absolute_path_to_file(FileSetup.PICKUPS.value, FileFormat.JSON)
@@ -111,9 +112,16 @@ class MobilityGenerator():
             min_treshold = max_treshold
         assert False, "Human.__assign_personality - personality not found."
 
-    def __check_edge_allows_vehicle_type(self, edge: Type[SumoEdge]):
+    def __check_edge_allows_vehicle_type(self, edge_id: str):
         for v_type in self.__vehicle_types:
-            if edge.allows(v_type["vClass"]):
+            allow: bool = utils.sumo_net_api_call(
+                Api.CHECK_EDGE_ALLOWS_VEHICLE,
+                {
+                    ApiIdentifier.EDGE_ID.value: edge_id,
+                    ApiIdentifier.VEHICLE_CLASS.value: v_type["vClass"]
+                }
+            )
+            if allow:
                 return True
         return False
 
@@ -125,23 +133,38 @@ class MobilityGenerator():
         taz_info: TazInfo = self.__net.get_taz_info(taz_id, net_type)
         personality_distribution: list[[float, PersonalityType]] = taz_info[ConfigEnum.PERSONALITY_DISTRIBUTION.value][HumanEnum.CUSTOMERS.value]
         if src_edge_id is None:
-            src_edge_id = self.__net.get_random_edge_from_taz_id(taz_id, net_type=net_type)
+            src_edge_id = self.__net.get_random_edge_id_from_taz_id(taz_id, net_type=net_type)
             if src_edge_id is None:
                 return
-        src_edge: Type[SumoEdge] = self.__sumo_net.getEdge(src_edge_id)
-
-        if self.__check_edge_allows_vehicle_type(src_edge):
-            src_edge_lane: Type[SumoLane] = src_edge.getLanes()[0].getID()
-            src_pos: float = round(random.uniform(0.01, src_edge.getLength()), 2)
+        if self.__check_edge_allows_vehicle_type(src_edge_id):
+            src_edge_lane_id = utils.sumo_net_api_call(
+                Api.GET_EDGE_LANE_ID,
+                {
+                    ApiIdentifier.EDGE_ID.value: src_edge_id,
+                    ApiIdentifier.LANE_NUM.value: 0
+                }
+            )
+            src_edge_length = utils.sumo_net_api_call(
+                Api.GET_EDGE_LENGTH,
+                {
+                    ApiIdentifier.EDGE_ID.value: src_edge_id
+                }
+            )
+            src_pos: float = round(random.uniform(0.01, src_edge_length), 2)
             src_taz_id = self.__net.get_taz_id_from_edge_id(src_edge_id, NetType.ANALYTICS_NET)
             ride_length: Type[RideEnum] = RideEnum(utils.select_from_distribution(self.__ride_setup[ConfigEnum.ROUTE_LENGTH_DISTRIBUTION]))
             dst_edge_id: str = self.__net.generate_destination_edge(taz_id, ride_length, net_type)
             if dst_edge_id is None:
                 return
-            dst_edge: Type[SumoEdge] = self.__sumo_net.getEdge(dst_edge_id)
-            dst_pos = round(random.uniform(0.01, dst_edge.getLength()), 2)
+            dst_edge_length = utils.sumo_net_api_call(
+                Api.GET_EDGE_LENGTH,
+                {
+                    ApiIdentifier.EDGE_ID.value: dst_edge_id
+                }
+            )
+            dst_pos = round(random.uniform(0.01, dst_edge_length), 2)
             dst_taz_id = self.__net.get_taz_id_from_edge_id(dst_edge_id, NetType.ANALYTICS_NET)
-            if self.__check_edge_allows_vehicle_type(dst_edge) and self.__net.check_connection_travel_time(src_taz_id, dst_taz_id):
+            if self.__check_edge_allows_vehicle_type(dst_edge_id) and self.__net.check_connection_travel_time(src_taz_id, dst_taz_id):
                 personality: Type[PersonalityType] = self.__assign_personality(personality_distribution)
                 customer_id = f"customer_{self.__customer_counter}"
                 self.__customer_counter += 1
@@ -151,7 +174,7 @@ class MobilityGenerator():
                     MobilityXMLEnum.DEPART_POS.value: str(src_pos)
                 }
                 stop_attr = {
-                    MobilityXMLEnum.LANE.value: src_edge_lane,
+                    MobilityXMLEnum.LANE.value: src_edge_lane_id,
                     MobilityXMLEnum.DEPART_POS.value: str(src_pos),
                     MobilityXMLEnum.DEPART_POS.value: str(dst_pos),
                     MobilityXMLEnum.DURATION.value: str(1000)  # set to huge number by default. When the ride will start the stop will be removed
@@ -175,20 +198,28 @@ class MobilityGenerator():
         personality_distribution: list[[float, PersonalityType]] = taz_info[ConfigEnum.PERSONALITY_DISTRIBUTION.value][HumanEnum.DRIVERS.value]
         personality: Type[PersonalityType] = self.__assign_personality(personality_distribution)
         if src_edge_id is None:
-            src_edge_id = self.__net.get_random_edge_from_taz_id(taz_id, net_type=net_type)
+            src_edge_id = self.__net.get_random_edge_id_from_taz_id(taz_id, net_type=net_type)
             if src_edge_id is None:
                 return
-        src_edge: Type[SumoEdge] = self.__sumo_net.getEdge(src_edge_id)
-        if self.__check_edge_allows_vehicle_type(src_edge):
-            route: list[Type[SumoEdge]]
-            cost: float
-            route, cost = self.__net.generate_random_sumolib_route_in_taz(taz_id, src_edge_id, net_type)
-            if route is not None:
-                dst_edge = route[-1]
-                route_str: str = self.__net.convert_route_to_str(route)
-                route_edge_id_list = self.__net.convert_route_to_edge_id_list(route)
-                src_pos: float = round(random.uniform(0.01, src_edge.getLength()), 2)
-                dst_pos: float = round(random.uniform(0.01, dst_edge.getLength()), 2)
+        src_edge_length = utils.sumo_net_api_call(
+            Api.GET_EDGE_LENGTH,
+            {
+                ApiIdentifier.EDGE_ID.value: src_edge_id
+            }
+        )
+        if self.__check_edge_allows_vehicle_type(src_edge_id):
+            route_edge_id_list, cost = self.__net.generate_random_sumolib_route_in_taz(taz_id, src_edge_id, net_type)
+            if len(route_edge_id_list) > 0:
+                dst_edge_id = route_edge_id_list[-1]
+                dst_edge_length = utils.sumo_net_api_call(
+                    Api.GET_EDGE_LENGTH,
+                    {
+                        ApiIdentifier.EDGE_ID.value: dst_edge_id
+                    }
+                )
+                route_str: str = self.__net.convert_route_edge_id_list_to_str(route_edge_id_list)
+                src_pos: float = round(random.uniform(0.01, src_edge_length), 2)
+                dst_pos: float = round(random.uniform(0.01, dst_edge_length), 2)
                 driver_id = f"driver_{self.__driver_counter}"
                 self.__driver_counter += 1
                 driver_attr = {

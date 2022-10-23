@@ -8,6 +8,7 @@ from src.enum.api.Api import Api as ApiSimulator
 from flask_restful import Resource, Api, reqparse
 from src.enum.setup.FileSetup import FileSetup
 from src.enum.setup.Env import Env
+from src.utils import utils
 import sumolib
 
 env_variables = {}
@@ -67,8 +68,21 @@ class Traci(Resource):
         parser.add_argument(ApiIdentifier.FLAGS, required=False, type=int, location="args")
         parser.add_argument(ApiIdentifier.ROUTE_ID, required=False, type=str, location="args")
         parser.add_argument(ApiIdentifier.STAGE_NUM, required=False, type=int, location="args")
-        args = parser.parse_args()
+        parser.add_argument(ApiIdentifier.ROUTE_STR, required=False, type=str, location="args")
+        args = utils.decode_args(parser.parse_args())
         command = args[ApiIdentifier.COMMAND]
+        print(args)
+        if command == ApiSimulator.ADD_ROUTE:
+            route_id = args[ApiIdentifier.ROUTE_ID]
+            route_edge_id_list = args[ApiIdentifier.ROUTE_STR].split(ApiIdentifier.SEPARATOR.value)
+            result = ApiIdentifier.OK.value
+            try:
+                traci.route.add(route_id, route_edge_id_list)
+            except:
+                result = ApiIdentifier.KO.value
+            return {
+               ApiIdentifier.DATA.value: result
+            }, 200
         if command == ApiSimulator.APPEND_STAGE:
             stage = args[ApiIdentifier.STAGE]
             if stage == ApiIdentifier.DRIVING_STAGE.value:
@@ -81,78 +95,90 @@ class Traci(Resource):
                 duration = args[ApiIdentifier.DURATION]
                 traci.person.appendWaitingStage(customer_id, duration)
             return {
-                "data": "ok"
+                ApiIdentifier.DATA.value: ApiIdentifier.OK.value
             }, 200
         if command == ApiSimulator.CLOSE_TRACI:
             traci.close(False)
         if command == ApiSimulator.CUSTOMER_CURRENT_EDGE_ID:
             customer_id = args[ApiIdentifier.CUSTOMER_ID]
             return {
-                "data": traci.person.getRoadID(customer_id)
+                ApiIdentifier.DATA.value: traci.person.getRoadID(customer_id)
             }, 200
         if command == ApiSimulator.CUSTOMER_CURRENT_POS:
             customer_id = args[ApiIdentifier.CUSTOMER_ID]
             return {
-                "data": traci.person.getLanePosition(customer_id)
+                ApiIdentifier.DATA.value: traci.person.getLanePosition(customer_id)
             }, 200
         if command == ApiSimulator.CUSTOMER_GET_EDGES:
             customer_id = args[ApiIdentifier.CUSTOMER_ID]
             return{
-                "data": traci.person.getEdges(customer_id)
+                ApiIdentifier.DATA.value: traci.person.getEdges(customer_id)
             }
         if command == ApiSimulator.CUSTOMERS_ID_LIST:
             return {
-               "data": traci.person.getIDList()
+               ApiIdentifier.DATA.value: traci.person.getIDList()
             }, 200
         if command == ApiSimulator.DRIVERS_ID_LIST:
             return {
-               "data": traci.vehicle.getIDList()
+               ApiIdentifier.DATA.value: traci.vehicle.getIDList()
             }, 200
         if command == ApiSimulator.DRIVER_CURRENT_EDGE_ID:
-            customer_id = args[ApiIdentifier.CUSTOMER_ID]
+            driver_id = args[ApiIdentifier.DRIVER_ID]
             return {
-                "data": traci.vehicle.getRoadID(customer_id)
+                ApiIdentifier.DATA.value: traci.vehicle.getRoadID(driver_id)
             }, 200
         if command == ApiSimulator.DRIVER_CURRENT_POS:
             customer_id = args[ApiIdentifier.CUSTOMER_ID]
             return {
-                "data": traci.vehicle.getLanePosition(customer_id)
+                ApiIdentifier.DATA.value: traci.vehicle.getLanePosition(customer_id)
+            }, 200
+        if command == ApiSimulator.DRIVING_DISTANCE:
+            driver_id = args[ApiIdentifier.DRIVER_ID]
+            dst_edge_id = args[ApiIdentifier.DST_EDGE_ID]
+            dst_pos = args[ApiIdentifier.DST_POS]
+            return {
+                ApiIdentifier.DATA.value: traci.vehicle.getDrivingDistance(driver_id, dst_edge_id, dst_pos)
             }, 200
         if command == ApiSimulator.GET_PERSON_NUMBER:
             driver_id = args[ApiIdentifier.DRIVER_ID]
             return {
-                "data": traci.vehicle.getPersonNumber(driver_id)
+                ApiIdentifier.DATA.value: traci.vehicle.getPersonNumber(driver_id)
             }
         if command == ApiSimulator.GET_ROUTE_INDEX:
             driver_id = args[ApiIdentifier.DRIVER_ID]
             return {
-                "data": traci.vehicle.getRouteIndex(driver_id)
+                ApiIdentifier.DATA.value: traci.vehicle.getRouteIndex(driver_id)
             }
         if command == ApiSimulator.REMOVE_CUSTOMER:
             customer_id = args[ApiIdentifier.CUSTOMER_ID]
             traci.person.remove(customer_id)
             return {
-               "data": "ok"
+               ApiIdentifier.DATA.value: ApiIdentifier.OK.value
             }, 200
         if command == ApiSimulator.REMOVE_DRIVER:
             driver_id = args[ApiIdentifier.DRIVER_ID]
+            print(traci.vehicle.getIDList())
             traci.vehicle.remove(driver_id)
             return {
-               "data": "ok"
+               ApiIdentifier.DATA.value: ApiIdentifier.OK.value
             }, 200
         if command == ApiSimulator.REMOVE_CUSTOMER_STAGE:
             customer_id = args[ApiIdentifier.CUSTOMER_ID]
             stage_num = args[ApiIdentifier.STAGE_NUM]
             traci.person.removeStage(customer_id, stage_num)
             return {
-               "data": "ok"
+               ApiIdentifier.DATA.value: ApiIdentifier.OK.value
+            }, 200
+        if command == ApiSimulator.ROUTE_ID_LIST:
+            return {
+               ApiIdentifier.DATA.value: traci.route.getIDList()
             }, 200
         if command == ApiSimulator.SET_ROUTE_ID:
             driver_id = args[ApiIdentifier.DRIVER_ID]
             route_id = args[ApiIdentifier.ROUTE_ID]
             traci.vehicle.setRouteID(driver_id, route_id)
             return {
-                "data": "ok"
+                ApiIdentifier.DATA.value: ApiIdentifier.OK.value
             }, 200
         if command == ApiSimulator.SET_STOP:
             driver_id = args[ApiIdentifier.DRIVER_ID]
@@ -162,20 +188,20 @@ class Traci(Resource):
             flags = args[ApiIdentifier.FLAGS]
             traci.vehicle.setStop(driver_id, dst_edge_id, stop_pos, duration=duration, flags=flags)
             return {
-                "data": "ok"
+                ApiIdentifier.DATA.value: ApiIdentifier.OK.value
             }, 200
         if command == ApiSimulator.SIMULATION_STEP:
             traci.simulationStep()
             return {
-               "data": "ok"
+               ApiIdentifier.DATA.value: ApiIdentifier.OK.value
             }, 200
         if command == ApiSimulator.SIMULATION_TIME:
             simulation_time = traci.simulation.getTime()
             return {
-                "data": simulation_time
+                ApiIdentifier.DATA.value: simulation_time
             }, 200
         if command == ApiSimulator.START_TRACI:
             start_traci()
             return {
-                "data": "ok"
+                ApiIdentifier.DATA.value: ApiIdentifier.OK.value
             }, 200

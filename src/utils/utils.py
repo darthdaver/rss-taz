@@ -17,7 +17,6 @@ from xml.etree.ElementTree import Element
 from typing import Union, Dict
 import requests
 
-
 def check_path_exists(path, is_path_file=False):
     if is_path_file:
         path = path[:path.rindex('/')]
@@ -84,10 +83,12 @@ def generate_absolute_path_to_file(path: Type[Paths], file_name: Type[FileName],
     complete_path = f"{os.path.join(path.value, dataset.value, file_format.value)}"
     return f"{os.path.join(complete_path, complete_file_name)}.{file_format.value}"
 
+
 def generate_absolute_path_to_file(path: Type[Paths], file_name: Type[FileName], file_format: Type[FileFormat], dataset: Type[Dataset], city: Type[City]):
     complete_file_name = f"{city.value}_{dataset.value}_{file_name.value}"
     complete_path = f"{os.path.join(path.value, dataset.value, file_format.value)}"
     return f"{os.path.join(complete_path, complete_file_name)}.{file_format.value}"
+
 
 def list_data_files_in_dir(path_to_dir: str, starts_with_str: Union[str, None] = None):
     file_name_list = []
@@ -161,18 +162,32 @@ def select_from_list(lst):
     return None
 
 
+def encode_url(url: str):
+    return url.replace("#","AST")
+
+
+def decode_args(args):
+    for k,v in args.items():
+        if type(v) == str:
+            args[k] = v.replace("AST","#")
+    return args
+
+
 def traci_api_call(command: ApiIdentifier, params: Dict[str,str] = {}) -> any:
     api_url = f"http://localhost:5000/traci?command={command.value}"
     if bool(params):
         for k, v in params.items():
             api_url += f"&{k}={v}"
-    response = requests.get(api_url)
+    encoded_url = encode_url(api_url)
+    response = requests.get(encoded_url)
     return response.json()[ApiIdentifier.DATA]
+
 
 def sumo_net_api_call(command: ApiIdentifier, params: Dict[str,str] = {}) -> any:
     api_url = f"http://localhost:5000/sumo_net?command={command.value}"
     if bool(params):
         for k, v in params.items():
             api_url += f"&{k}={v}"
-    response = requests.get(api_url)
+    encoded_url = encode_url(api_url)
+    response = requests.get(encoded_url)
     return response.json()[ApiIdentifier.DATA]
