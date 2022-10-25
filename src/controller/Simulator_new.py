@@ -1259,6 +1259,7 @@ class Simulator:
     def run(self):
         step = 0
         stop = False
+        start_simulation = time.perf_counter()
         while not stop:
             simulation_performances = {}
             start_iteration = time.perf_counter()
@@ -1281,7 +1282,7 @@ class Simulator:
                     )
                 finish = time.perf_counter()
                 print(f"Customer generation in {round(finish - start, 4)} second(s).")
-
+                self.check_route_exist()
                 simulation_performances["customer_generation"] = round(finish - start, 4)
                 start = time.perf_counter()
                 for driver_gen_info in drivers_to_generate:
@@ -1294,46 +1295,47 @@ class Simulator:
                     )
                 finish = time.perf_counter()
                 print(f"Driver generation in {round(finish - start, 4)} second(s).")
-                #self.check_route_consistency()
+                self.check_route_exist()
                 simulation_performances["driver_generation"] = round(finish - start, 4)
                 start = time.perf_counter()
                 self.__check_drivers_list(timestamp)
                 finish = time.perf_counter()
                 print(f"Checked drivers list in {round(finish - start, 4)} second(s).")
-                #self.check_route_consistency()
+                self.check_route_exist()
                 simulation_performances["check_driver_list"] = round(finish - start, 4)
                 self.__check_customers_list()
                 finish = time.perf_counter()
                 print(f"Checked customers list in {round(finish - start, 4)} second(s).")
-                #self.check_route_consistency()
+                self.check_route_exist()
                 simulation_performances["check_customer_list"] = round(finish - start, 4)
                 if utils.random_choice(0.8):
                     start = time.perf_counter()
                     self.__generate_customer_requests(timestamp)
                     finish = time.perf_counter()
                     print(f"Generated customer requests in {round(finish - start, 4)} second(s).")
-                    #self.check_route_consistency()
+                    self.check_route_exist()
                     simulation_performances["generated_customer_requests"] = round(finish - start, 4)
                 else:
                     simulation_performances["generated_customer_requests"] = 0.0
+                    self.check_route_exist()
                 start = time.perf_counter()
                 self.__process_rides(timestamp)
                 finish = time.perf_counter()
                 print(f"Processed rides in {round(finish - start, 4)} second(s).")
-                #self.check_route_consistency()
+                self.check_route_exist()
                 simulation_performances["processed_rides"] = round(finish - start, 4)
                 start = time.perf_counter()
                 self.__manage_pending_request(timestamp)
                 finish = time.perf_counter()
                 print(f"Managed pending requests in {round(finish - start, 4)} second(s).")
-                #self.check_route_consistency()
+                self.check_route_exist()
                 simulation_performances["managed_pending_requests"] = round(finish - start, 4)
                 if timestamp > 0 and timestamp % 20.0 == 0:
                     start = time.perf_counter()
                     self.__update_surge_multiplier(timestamp)
                     finish = time.perf_counter()
                     print(f"Updated surge multipliers in {round(finish - start, 4)} second(s).")
-                    #self.check_route_consistency()
+                    self.check_route_exist()
                     simulation_performances["updated_surge_multipliers"] = round(finish - start, 4)
                 else:
                     simulation_performances["updated_surge_multipliers"] = 0.0
@@ -1341,13 +1343,13 @@ class Simulator:
                 self.__update_drivers(timestamp)
                 finish = time.perf_counter()
                 print(f"Updated drivers in {round(finish - start, 4)} second(s).")
-                #self.check_route_consistency()
+                self.check_route_exist()
                 simulation_performances["updated_drivers"] = round(finish - start, 4)
                 start = time.perf_counter()
                 self.__update_rides_state(timestamp)
                 finish = time.perf_counter()
                 print(f"Updated rides state in {round(finish - start, 4)} second(s).")
-                #self.check_route_consistency()
+                self.check_route_exist()
                 simulation_performances["updated_rides_state"] = round(finish - start, 4)
                 start = time.perf_counter()
                 if timestamp > 0 and (timestamp % self.__simulator_setup[ConfigEnum.CHECKPOINTS.value][ConfigEnum.TIME_MOVE_DRIVER.value]) == 0.0:
@@ -1355,95 +1357,33 @@ class Simulator:
                     self.__update_driver_movements(timestamp)
                     finish = time.perf_counter()
                     print(f"Updated drivers movements in {round(finish - start, 4)} second(s).")
-                    #self.check_route_consistency()
+                    self.check_route_exist()
                     simulation_performances["updated_drivers_movements"] = round(finish - start, 4)
                 else:
                     simulation_performances["updated_drivers_movements"] = 0.0
                 scenario_events = self.__scenario.check_events(timestamp)
                 for event_type, params in scenario_events:
                     self.__perform_scenario_event(timestamp, event_type, params)
-
-                """if timestamp > 0 and timestamp % 100.0 == 0:
-                    start = time.perf_counter()
-                    self.__printer.export_global_indicators()
-                    self.__printer.export_global_indicators_v2()
-                    self.__printer.export_specific_indicators()
-                    self.__printer.export_rides_assignations()
-                    self.__printer.export_surge_multipliers()
-                    self.__printer.export_tazs_info_agents_statistics()
-                    finish = time.perf_counter()
-                    print(f"Printed statistics in {round(finish - start, 2)} second(s).")
-                    simulation_performances["printed_statistics"] = round(finish - start, 4)
-                    #self.print_drivers_by_state()
-                    #self.print_customers_by_state()
-                else:
-                    simulation_performances["printed_statistics"] = 0.0
-                if timestamp > 0 and timestamp >= 100 and timestamp % 100.0 == 0:
-                    start = time.perf_counter()
-                    self.__printer.export_energy_indexes(timestamp, self.__energy_indexes.get_energy_indexes(), 100)
-                    finish = time.perf_counter()
-                    print(f"Exported energy indexes 100 in {round(finish - start, 2)} second(s).")
-                    simulation_performances["export_index_100"] = round(finish - start, 4)
-                else:
-                    simulation_performances["export_index_100"] = 0.0
-                if timestamp > 0 and timestamp >= 200 and timestamp % 100.0 == 0:
-                    start = time.perf_counter()
-                    self.__printer.export_energy_indexes(timestamp, self.__energy_indexes.get_energy_indexes(), 200)
-                    finish = time.perf_counter()
-                    print(f"Exported energy indexes 200 in {round(finish - start, 2)} second(s).")
-                    simulation_performances["export_index_200"] = round(finish - start, 4)
-                else:
-                    simulation_performances["export_index_200"] = 0.0
-                if timestamp > 0 and timestamp >= 500 and timestamp % 100.0 == 0:
-                    start = time.perf_counter()
-                    self.__printer.export_energy_indexes(timestamp, self.__energy_indexes.get_energy_indexes(), 500)
-                    finish = time.perf_counter()
-                    print(f"Exported energy indexes 500 in {round(finish - start, 2)} second(s).")
-                    simulation_performances["export_index_500"] = round(finish - start, 4)
-                else:
-                    simulation_performances["export_index_500"] = 0.0"""
                 if timestamp > 0 and timestamp % 1000.0 == 0:
                     self.export_statistics()
                 if timestamp > 0 and timestamp % 5000.0 == 0:
                     stop = True
                     print("STOP")
                     self.export_statistics()
-                if timestamp == 0.0:
-                    #self.__printer.save_specific_indicators(timestamp)
-                    #self.__printer.export_energy_indexes(timestamp, self.__energy_indexes.get_energy_indexes(), 100)
-                    #self.__printer.export_energy_indexes(timestamp, self.__energy_indexes.get_energy_indexes(), 200)
-                    #self.__printer.export_energy_indexes(timestamp, self.__energy_indexes.get_energy_indexes(), 500)
-                    pass
-                start = time.perf_counter()
-                #self.__printer.save_global_indicators(timestamp, self.__provider.get_rides_info_by_state("all"))
-                #self.__printer.save_global_indicators_v2(timestamp, self.__provider.get_rides_info_by_state("all"))
-                #self.__save_tazs_info_agents(timestamp)
-                #self.__printer.save_surge_multipliers(timestamp, self.__net.get_all_taz_info())
-                finish = time.perf_counter()
-                print(f"Saved statistics in {round(finish - start, 4)} second(s).")
-                #self.check_route_consistency()
                 simulation_performances["saved_statistics"] = round(finish - start, 4)
-                #traci.simulationStep()
             except Exception as e:
-                #self.print_drivers()
                 print(self.__drivers_by_state)
+                print(traci.vehicle.getIDList())
                 print(self.__customers_by_state)
                 print(e)
                 self.export_statistics()
-                #self.__printer.export_global_indicators()
-                #self.__printer.export_global_indicators_v2()
-                #self.__printer.export_specific_indicators()
-                #self.__printer.export_rides_assignations()
-                #self.__printer.export_surge_multipliers()
-                #self.__printer.export_energy_indexes(timestamp, self.__energy_indexes.get_energy_indexes(), 100)
-                #self.__printer.export_energy_indexes(timestamp, self.__energy_indexes.get_energy_indexes(), 200)
-                #self.__printer.export_energy_indexes(timestamp, self.__energy_indexes.get_energy_indexes(), 500)
                 raise Exception("A Fatal error occurred in Simulator.")
             finish_iteration = time.perf_counter()
             print(f"Completed iteration in {round(finish_iteration-start_iteration, 4)} seconds.")
             simulation_performances["completed_iteration"] = round(finish_iteration - start_iteration, 4)
             self.__printer.save_simulator_performances(timestamp, simulation_performances)
-
+        finish_simulation = time.perf_counter()
+        print(f"Simulation ended in {round(finish_simulation - start_simulation, 4)} seconds.")
         traci.close()
         sys.stdout.flush()
 
@@ -1454,6 +1394,14 @@ class Simulator:
         self.__printer.export_specific_indicators_obj(self.__specific_indicators)
         self.__printer.export_energy_indexes_obj(self.__energy_indexes)
         self.__printer.export_rides_assignations()
+
+    def check_route_exist(self):
+        for driver_id, driver in self.__drivers.items():
+            driver_info = driver.get_info()
+            if driver_id in traci.vehicle.getIDList():
+                if driver_info[DriverIdentifiers.ROUTE.value] is None:
+                    print(driver_info)
+                assert driver_info[DriverIdentifiers.ROUTE.value] is not None, "Simulator.__get_drivers_info_moving_in_taz - driver route not found"
 
     def check_route_consistency(self):
         for driver_id, driver in self.__drivers.items():

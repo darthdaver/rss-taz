@@ -115,8 +115,9 @@ class Ride:
         self.__state = state
         return self.get_info()
 
-    def sort_candidates(self):
+    def sort_candidates(self) -> RideInfo:
         self.__request[RequestIdentifiers.DRIVERS_CANDIDATE.value] = sorted(self.__request[RequestIdentifiers.DRIVERS_CANDIDATE.value], key=lambda d: d[RequestIdentifiers.COST.value])
+        return self.get_info()
 
     def update_request_minimal(self, candidates_count: int):
         self.__request[RequestIdentifiers.CANDIDATES_COUNT.value] = candidates_count

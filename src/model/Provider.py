@@ -27,6 +27,7 @@ from src.types.Driver import DriverInfo
 from sumolib.net import Net as SumoNet
 import sumolib
 import time
+from src.enum.identifiers.Request import Request as RequestIdentifier
 from joblib import wrap_non_picklable_objects
 from src.task import tasks
 from src.enum.identifiers.Api import Api as ApiIdentifier
@@ -442,56 +443,30 @@ class Provider:
             drivers_info: Type[DriverInfo]
     ):
         drivers_info_array = list(drivers_info.values())
-        counter_impossible_route = 0
         random.shuffle(drivers_info_array)
         for driver_info in drivers_info_array:
             driver_id = driver_info[DriverIdentifier.DRIVER_ID.value]
-            start = time.perf_counter()
-            customer_id = ride_info[RideIdentifier.CUSTOMER_ID.value]
-            customer_position = traci.person.getPosition(customer_id)
-            driver_position = traci.vehicle.getPosition(driver_id)
-            distance_1 = traci.simulation.getDistance2D(customer_position[0],customer_position[1],driver_position[0],driver_position[1],isDriving=True)
-            finish = time.perf_counter()
-            print(distance_1)
-            print(f"Distance2D driving - {round(finish - start, 4)} second(s).")
-            start = time.perf_counter()
-            customer_id = ride_info[RideIdentifier.CUSTOMER_ID.value]
-            customer_position = traci.person.getPosition(customer_id)
-            driver_position = traci.vehicle.getPosition(driver_id)
-            distance_2= traci.simulation.getDistance2D(customer_position[0],customer_position[1],driver_position[0],driver_position[1],isDriving=False)
-            finish = time.perf_counter()
-            print(f"Distance2D not driving - {round(finish - start, 4)} second(s).")
-            print(distance_2)
-            start = time.perf_counter()
             customer_id = ride_info[RideIdentifier.CUSTOMER_ID.value]
             customer_position = traci.person.getPosition(customer_id)
             driver_position = traci.vehicle.getPosition(driver_id)
             customer_coordinates = traci.simulation.convertGeo(customer_position[0],customer_position[1])
             driver_coordinates = traci.simulation.convertGeo(driver_position[0],driver_position[1])
-            distance_3 = haversine((driver_coordinates[1],driver_coordinates[0]), (customer_coordinates[1],customer_coordinates[0]), unit=Unit.METERS)
-            finish = time.perf_counter()
-            print(distance_3)
-            print(f"Distance haversine - {round(finish - start, 4)} second(s).")
-            if counter_impossible_route < 5:
-                driver_id = driver_info[DriverIdentifier.DRIVER_ID.value]
-                driver_edge_id = traci.vehicle.getRoadID(driver_id)
-                driver_edge = self.__sumo_net.getEdge(driver_edge_id)
-                meeting_edge = self.__sumo_net.getEdge(meeting_edge_id)
-                route, cost = self.__sumo_net.getOptimalPath(driver_edge, meeting_edge)
-                if route is not None and cost <= self.__request[ProviderIdentifier.MAX_DRIVER_DISTANCE.value]:
-                    ride_info = self.add_candidate_to_ride(ride_info[RideIdentifier.RIDE_ID.value], {
-                        RequestIdentifier.CANDIDATE_ID.value: driver_id,
-                        RequestIdentifier.COST.value: cost,
-                        RequestIdentifier.RESPONSE_COUNT_DOWN.value: 15,
-                        RequestIdentifier.SEND_REQUEST_BACK_TIMER.value: utils.random_int_from_range(0, 11)
-                    })
-                else:
-                    counter_impossible_route += 1
+            distance = haversine(
+                (driver_coordinates[1],driver_coordinates[0]),
+                (customer_coordinates[1],customer_coordinates[0]),
+                unit=Unit.METERS
+            )
+            if distance < self.__request[ProviderIdentifier.MAX_DRIVER_DISTANCE.value]:
+                ride_info = self.add_candidate_to_ride(ride_info[RideIdentifier.RIDE_ID.value], {
+                    RequestIdentifier.CANDIDATE_ID.value: driver_id,
+                    RequestIdentifier.COST.value: distance,
+                    RequestIdentifier.RESPONSE_COUNT_DOWN.value: 15,
+                    RequestIdentifier.SEND_REQUEST_BACK_TIMER.value: utils.random_int_from_range(0, 11)
+                })
         if len(ride_info[RideIdentifier.REQUEST.value][RequestIdentifier.DRIVERS_CANDIDATE.value]) == 0:
             # print(f"Provider.__nearby_drivers - {ride_info[RideIdentifier.CUSTOMER_ID.value]} has 0 candidates.")
             self.set_ride_request_state(ride_info[RideIdentifier.RIDE_ID.value], RideRequestState.ROUTE_NOT_FOUND)
-        self.__rides[ride_info[RideIdentifier.RIDE_ID.value]].sort_candidates()
-
+        ride_info = self.__rides[ride_info[RideIdentifier.RIDE_ID.value]].sort_candidates()
     def __ride_not_served(
             self,
             ride: Type[Ride]
