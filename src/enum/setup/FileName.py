@@ -1,4 +1,5 @@
 from enum import Enum
+from src.enum.setup.Scenario import Scenario
 
 class FileName(str, Enum):
     PICKUPS_DROPOFFS = 'pickups_dropoffs'
@@ -31,6 +32,16 @@ class FileName(str, Enum):
     PROVIDER = 'provider'
     NET_SUMO = 'san-francisco.net'
     # SCENARIOS
-    SCENARIO = 'normal'
+    SCENARIO = Scenario.NORMAL.value
     ENV = ".env"
+    ENERGY_INDEXES_100 = "energy_indexes_100"
+    ENERGY_INDEXES_200 = "energy_indexes_200"
+    ENERGY_INDEXES_500 = "energy_indexes_500"
+    ENERGY_INDEXES_100_VALUES = "energy_indexes_100_values"
+    ENERGY_INDEXES_200_VALUES = "energy_indexes_200_values"
+    ENERGY_INDEXES_500_VALUES = "energy_indexes_500_values"
+    ENERGY_INDEXES = "energy_indexes"
+    GLOBAL_INDICATORS = "global_indicators"
+    SPECIFIC_INDICATORS = "specific_indicators"
+    SIMULATOR_PERFORMANCES = "simulator_performances"
 

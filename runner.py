@@ -5,13 +5,62 @@
 from __future__ import absolute_import
 from __future__ import print_function
 from src.controller.Simulator_new import Simulator
-#from src.settings.Settings import Settings
+import os
+import sys
+import optparse
+import traci
+from sumolib import checkBinary
+from src.enum.setup.FileSetup import FileSetup
+from src.enum.setup.Env import Env
+import sumolib
+from src.settings.Settings import Settings
 
-#env_settings = Settings()
-#TRACI_PORT = env_settings.TRACI_PORT
-
+env_settings = Settings()
+TRACI_PORT = env_settings.TRACI_PORT
+env_variables = {}
 
 if __name__ == "__main__":
+    if 'SUMO_HOME_BREW' in os.environ:
+        tools = os.path.join(os.environ['SUMO_HOME_BREW'], 'tools')
+        bin = os.path.join(os.environ['SUMO_HOME_BREW'], 'bin')
+        sys.path.append(tools)
+        sys.path.append(bin)
+    else:
+        sys.exit("please declare environment variable 'SUMO_HOME'")
+
+    def get_options():
+        optParser = optparse.OptionParser()
+        optParser.add_option("--nogui", action="store_true", default=False, help="run the commandline version of sumo")
+        options, args = optParser.parse_args()
+        return options
+
+    # first, generate the route file for this simulation
+    options = get_options()
+    # If you want to run this tutorial please uncomment following lines, that define the sumoBinary
+    # and delete the line before traci.start, to use the gui
+    if options.nogui:
+        sumo_binary = checkBinary('sumo')
+    else:
+        sumo_binary = checkBinary('sumo-gui')
+
+    traci_port = sumolib.miscutils.getFreeSocketPort()
+    env_variables[Env.TRACI_PORT] = traci_port
+    with open(FileSetup.ENV, 'w') as env_file:
+        for k,v in env_variables.items():
+            env_file.write(f"{k}={v}")
+
+    print("TRACI START")
+
+    traci.start(
+        [
+            f"{sumo_binary}",
+            "-c",
+            "net_config/sumo.sumocfg"
+        ],
+        label="sim_1",
+        port=traci_port
+    )
+
     print("SIMULATOR START")
     simulator = Simulator()
     print(f"INIT SIMULATOR")

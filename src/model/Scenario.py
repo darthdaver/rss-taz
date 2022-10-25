@@ -1,14 +1,15 @@
 from src.enum.types.EventType import EventType
+from src.enum.setup.Scenario import Scenario as ScenarioType
 
 class Scenario:
     def __init__(self, planner):
-        self.name = planner["name"]
-        self.events = planner["events"]
+        self.__type = ScenarioType(planner["name"])
+        self.__events = planner["events"]
 
     def check_events(self, timestamp):
         timestamp = int(timestamp)
         events_type = []
-        for ev in self.events:
+        for ev in self.__events:
             if ev["start"] <= timestamp < ev["end"]:
                 if timestamp == ev["start"]:
                     print(f"TRIGGER {ev['type']}: START")
@@ -30,3 +31,6 @@ class Scenario:
             if timestamp == ev["end"]:
                 print(f"TRIGGER {ev['type']}: END")
         return events_type
+
+    def get_scenario_type(self):
+        return self.__type

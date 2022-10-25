@@ -1,6 +1,4 @@
 import random
-from itertools import repeat
-from multiprocessing import Pool, Lock
 from typing import Type, Dict, Union
 from src.model.Ride import Ride
 from src.model.Route import Route
@@ -33,18 +31,21 @@ from joblib import wrap_non_picklable_objects
 from src.task import tasks
 from src.enum.identifiers.Api import Api as ApiIdentifier
 from src.enum.api.Api import Api
+import traci
+from haversine import haversine, Unit
 
 class Provider:
     def __init__(
             self,
-            provider_setup: ProviderSetup
+            provider_setup: ProviderSetup,
+            sumo_net: Type[SumoNet]
     ):
         self.__rides: Dict[str, Ride] = {}
         self.__rides_by_state: Dict[str, list[str]] = {k.value: [] for k in RideState}
         self.__fare: FareSetup = provider_setup[ProviderIdentifier.FARE.value]
         self.__request: RequestSetup = provider_setup[ProviderIdentifier.REQUEST.value]
         self.__cpu_cores = multiprocessing.cpu_count()
-        self.max_driver_distance = self.__request[ProviderIdentifier.MAX_DRIVER_DISTANCE.value]
+        self.__sumo_net = sumo_net
 
 
     def add_ride(
@@ -76,12 +77,11 @@ class Provider:
                         RequestIdentifier.CANDIDATE_ID.value] == agent_info[HumanIdentifier.HUMAN_ID.value]:
                         found_ride_info = ride_info
                 else:
-                    if ride_info[RideIdentifier.RIDE_ID.value] == agent_info[HumanIdentifier.HUMAN_ID.value]:
+                    if ride_info[RideIdentifier.DRIVER_ID.value] == agent_info[HumanIdentifier.HUMAN_ID.value]:
                         found_ride_info = ride_info
             elif agent_type == HumanType.CUSTOMER:
                 if ride_info[RideIdentifier.CUSTOMER_ID.value] == agent_info[HumanIdentifier.HUMAN_ID.value]:
                     found_ride_info = ride_info
-
         assert agent_type in [HumanType.DRIVER, HumanType.CUSTOMER], f"Provider.find_ride_by_agent_id - unexpected agent type {agent_type}"
         state = None
         found_ride_info = None
@@ -95,14 +95,6 @@ class Provider:
             state = RideState.REQUESTED
         else:
             assert False, f"Provider.find_ride_by_agent_id - unexpected agent state {agent_info[HumanIdentifier.HUMAN_STATE.value]}"
-        """Parallel(
-                n_jobs=self.__cpu_cores,
-                backend="threading"
-        )(
-            delayed(__search_ride)(ride_id)
-            for ride_id in self.__rides_by_state[state.value]
-            if found_ride_info is None
-        )"""
         for ride_id in self.__rides_by_state[state.value]:
             if found_ride_info is None:
                 __search_ride(ride_id)
@@ -190,22 +182,11 @@ class Provider:
             self,
             state: str = "all"
     ):
-        def __filter_ride_info_by_state(ride_id: str):
-            nonlocal filtered_rides_info
-            nonlocal state
-            ride = self.__rides[ride_id]
-            filtered_rides_info.append(ride.get_info())
         filtered_rides_info = []
         ride_list = self.__rides.keys() if state == "all" else self.__rides_by_state[state]
-        """Parallel(
-                n_jobs=self.__cpu_cores,
-                backend="threading"
-        )(
-            delayed(__filter_ride_info_by_state)(ride_id)
-            for ride_id in ride_list
-        )"""
         for ride_id in ride_list:
-            __filter_ride_info_by_state(ride_id)
+            ride = self.__rides[ride_id]
+            filtered_rides_info.append(ride.get_info())
         return filtered_rides_info
 
     def get_ride_info_by_customer_id(
@@ -282,18 +263,14 @@ class Provider:
             timestamp: float,
             ride_info: Type[RideInfo],
             meeting_edge_id: str,
-            available_drivers_info,
-            pool: Type[Pool],
-            lock: Type[Lock]
+            available_drivers_info
     ):
         ride = self.__rides[ride_info[RideIdentifier.RIDE_ID.value]]
         ride_info = ride.update_pending(timestamp)
         self.__nearby_drivers(
             ride_info,
             meeting_edge_id,
-            available_drivers_info,
-            pool,
-            lock
+            available_drivers_info
         )
         assert ride_info[RideIdentifier.RIDE_ID.value] in self.__rides_by_state[RideState.REQUESTED.value], "Provider.process_customer_request - ride request not included in unprocessed request"
         self.__rides_by_state[RideState.REQUESTED.value].remove(ride_info[RideIdentifier.RIDE_ID.value])
@@ -421,7 +398,7 @@ class Provider:
     ):
         def __filter_free_drivers(driver_info: Type[DriverInfo]):
             nonlocal free_drivers
-            traci_drivers_ids_list = utils.traci_api_call(Api.DRIVERS_ID_LIST)
+            traci_drivers_ids_list = traci.vehicle.getIDList()
             if driver_info[DriverIdentifier.DRIVER_ID.value] in traci_drivers_ids_list:
                 free_drivers.append(driver_info)
         free_drivers = []
@@ -462,24 +439,58 @@ class Provider:
             self,
             ride_info: Type[RideInfo],
             meeting_edge_id: str,
-            drivers_info: Type[DriverInfo],
-            pool: Type[Pool],
-            lock: Type[Lock]
+            drivers_info: Type[DriverInfo]
     ):
         drivers_info_array = list(drivers_info.values())
+        counter_impossible_route = 0
         random.shuffle(drivers_info_array)
-        ride_candidates = pool.starmap(
-            tasks.collect_candidates,
-            zip(
-                drivers_info_array,
-                repeat(meeting_edge_id),
-                repeat(self.max_driver_distance),
-                repeat(lock)
-            )
-        )
-        for candidate in ride_candidates:
-            if candidate is not None:
-                ride_info = self.add_candidate_to_ride(ride_info[RideIdentifier.RIDE_ID.value], candidate)
+        for driver_info in drivers_info_array:
+            driver_id = driver_info[DriverIdentifier.DRIVER_ID.value]
+            start = time.perf_counter()
+            customer_id = ride_info[RideIdentifier.CUSTOMER_ID.value]
+            customer_position = traci.person.getPosition(customer_id)
+            driver_position = traci.vehicle.getPosition(driver_id)
+            distance_1 = traci.simulation.getDistance2D(customer_position[0],customer_position[1],driver_position[0],driver_position[1],isDriving=True)
+            finish = time.perf_counter()
+            print(distance_1)
+            print(f"Distance2D driving - {round(finish - start, 4)} second(s).")
+            start = time.perf_counter()
+            customer_id = ride_info[RideIdentifier.CUSTOMER_ID.value]
+            customer_position = traci.person.getPosition(customer_id)
+            driver_position = traci.vehicle.getPosition(driver_id)
+            distance_2= traci.simulation.getDistance2D(customer_position[0],customer_position[1],driver_position[0],driver_position[1],isDriving=False)
+            finish = time.perf_counter()
+            print(f"Distance2D not driving - {round(finish - start, 4)} second(s).")
+            print(distance_2)
+            start = time.perf_counter()
+            customer_id = ride_info[RideIdentifier.CUSTOMER_ID.value]
+            customer_position = traci.person.getPosition(customer_id)
+            driver_position = traci.vehicle.getPosition(driver_id)
+            customer_coordinates = traci.simulation.convertGeo(customer_position[0],customer_position[1])
+            driver_coordinates = traci.simulation.convertGeo(driver_position[0],driver_position[1])
+            distance_3 = haversine((driver_coordinates[1],driver_coordinates[0]), (customer_coordinates[1],customer_coordinates[0]), unit=Unit.METERS)
+            finish = time.perf_counter()
+            print(distance_3)
+            print(f"Distance haversine - {round(finish - start, 4)} second(s).")
+            if counter_impossible_route < 5:
+                driver_id = driver_info[DriverIdentifier.DRIVER_ID.value]
+                driver_edge_id = traci.vehicle.getRoadID(driver_id)
+                driver_edge = self.__sumo_net.getEdge(driver_edge_id)
+                meeting_edge = self.__sumo_net.getEdge(meeting_edge_id)
+                route, cost = self.__sumo_net.getOptimalPath(driver_edge, meeting_edge)
+                if route is not None and cost <= self.__request[ProviderIdentifier.MAX_DRIVER_DISTANCE.value]:
+                    ride_info = self.add_candidate_to_ride(ride_info[RideIdentifier.RIDE_ID.value], {
+                        RequestIdentifier.CANDIDATE_ID.value: driver_id,
+                        RequestIdentifier.COST.value: cost,
+                        RequestIdentifier.RESPONSE_COUNT_DOWN.value: 15,
+                        RequestIdentifier.SEND_REQUEST_BACK_TIMER.value: utils.random_int_from_range(0, 11)
+                    })
+                else:
+                    counter_impossible_route += 1
+        if len(ride_info[RideIdentifier.REQUEST.value][RequestIdentifier.DRIVERS_CANDIDATE.value]) == 0:
+            # print(f"Provider.__nearby_drivers - {ride_info[RideIdentifier.CUSTOMER_ID.value]} has 0 candidates.")
+            self.set_ride_request_state(ride_info[RideIdentifier.RIDE_ID.value], RideRequestState.ROUTE_NOT_FOUND)
+        self.__rides[ride_info[RideIdentifier.RIDE_ID.value]].sort_candidates()
 
     def __ride_not_served(
             self,

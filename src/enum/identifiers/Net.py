@@ -21,3 +21,5 @@ class Net(str, Enum):
     EXPECTED_TRAVEL_TIME = "expected_travel_time"
     MEAN_TRAVEL_TIME = "mean_travel_time"
     STD_TRAVEL_TIME = "std_travel_time"
+    DRIVERS = "drivers"
+    ID = "id"

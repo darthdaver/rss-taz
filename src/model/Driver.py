@@ -19,10 +19,10 @@ class Driver(Human):
     ):
         super().__init__(timestamp, id, state, personality)
         self.__route: Type[Route] = route
-        self.__current_edge_id: str = route.get_source_edge_id()
         self.__last_ride_timestamp: float = timestamp if last_ride_timestamp is None else last_ride_timestamp
         self.__rides_completed: int = rides_completed
         self.__routes_updates: int = routes_updates
+        self.__current_edge_id: str = route.get_source_edge_id()
 
     def change_personality(self, new_personality: Type[PersonalityType]) -> DriverInfo:
         super().change_personality(new_personality)
@@ -59,8 +59,11 @@ class Driver(Human):
     def update_cancel(self):
         pass
 
-    def update_current_edge_id(self, current_edge_id):
-        self.__current_edge_id = current_edge_id
+    def update_current_edge(
+            self,
+            edge_id: str
+    ):
+        self.__current_edge_id = edge_id
 
     def update_end(self, timestamp: float, route: Type[Route]) -> DriverInfo:
         self.state = DriverState.IDLE

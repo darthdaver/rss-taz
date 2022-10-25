@@ -73,6 +73,6 @@ class Route:
             RouteIdentifiers.STD_TRAVEL_TIME.value: self.__std_travel_time,
             RouteIdentifiers.SRC_POS.value: self.__src_pos,
             RouteIdentifiers.DST_POS.value: self.__dst_pos,
-            RouteIdentifiers.DST_EDGE_ID: self.get_destination_edge_id(),
-            RouteIdentifiers.SRC_EDGE_ID: self.get_source_edge_id()
+            RouteIdentifiers.DST_EDGE_ID.value: self.get_destination_edge_id(),
+            RouteIdentifiers.SRC_EDGE_ID.value: self.get_source_edge_id()
         }

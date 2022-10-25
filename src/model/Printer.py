@@ -9,10 +9,20 @@ from src.enum.identifiers.EnergyIndexes import EnergyIndexes as EnergyIndexesIde
 from src.enum.identifiers.Net import Net as NetIdentifier
 from src.enum.identifiers.Config import Config as ConfigIdentifier
 from functools import reduce
+from src.utils import utils
+from src.enum.setup.Scenario import Scenario
+from src.enum.setup.FileName import FileName
+from src.enum.setup.FileFormat import FileFormat
+from src.enum.setup.City import City
+from src.enum.setup.Paths import Paths
 
 class Printer:
 
-    def __init__(self):
+    def __init__(
+            self,
+            city,
+            scenario
+    ):
         self.__global_indicators_content = ""
         self.__global_indicators_content_v2 = ""
         self.__specific_indicators_content = ""
@@ -20,6 +30,8 @@ class Printer:
         self.__rides_assignations_content = ""
         self.__tazs_info_agents_content = ""
         self.__simulator_performances_content = ""
+        self.__city = city
+        self.__scenario = scenario
 
     def export_global_indicators(self):
         path = f"{os.getcwd()}/output/global-indicators.csv"
@@ -114,8 +126,8 @@ class Printer:
         with open(path, 'a') as outfile:
             outfile.write(content)
 
-    @staticmethod
-    def export_energy_indexes(timestamp, energy_indexes, num_timestamps):
+
+    def export_energy_indexes(self, timestamp, energy_indexes, num_timestamps):
         timestamp_start = int(timestamp) - num_timestamps + 1
         content = ""
         content_values = ""
@@ -152,17 +164,94 @@ class Printer:
             content += f"{round(avg_overhead, 3)},"
             content += f"{round(avg_price_fluctuation, 3)}\n"
             content_values += f"{timestamp},{canceled},{not_served},{requested},{num_events_overhead}\n"
-        path = f"{os.getcwd()}/output/energy_indexes_{num_timestamps}.csv"
-        path_value = f"{os.getcwd()}/output/energy_indexes_{num_timestamps}_values.csv"
-        with open(path, 'a') as outfile:
-            outfile.write(content)
-        with open(path_value, 'a') as outfile_value:
-            outfile_value.write(content_values)
 
-            #unserved_requests = (energy_indexes["canceled"] + energy_indexes["not_served"]) / energy_indexes["requested"] if energy_indexes["requested"] else 0
-            #unserved_requests_accepted = (energy_indexes["canceled"] + energy_indexes["not_served"]) / (energy_indexes["canceled"] + energy_indexes["not_served"] + energy_indexes["accepted"])  if (energy_indexes["canceled"] + energy_indexes["not_served"] + energy_indexes["accepted"]) else 0
-            #avg_overhead = reduce(lambda sum, o: sum + o, energy_indexes["overhead"], 0) / len(energy_indexes["overhead"]) if len(energy_indexes["overhead"]) else 0
-            #avg_price_fluctuation = reduce(lambda sum, p: sum + p, energy_indexes["price_fluctuation"], 0) / len(energy_indexes["price_fluctuation"]) if len(energy_indexes["price_fluctuation"]) else 0
+        if num_timestamps == 100:
+            file_name = FileName.ENERGY_INDEXES_100
+            file_name_values = FileName.ENERGY_INDEXES_100_VALUES
+        elif num_timestamps == 200:
+            file_name = FileName.ENERGY_INDEXES_200
+            file_name_values = FileName.ENERGY_INDEXES_200_VALUES
+        elif num_timestamps == 500:
+            file_name = FileName.ENERGY_INDEXES_500
+            file_name_values = FileName.ENERGY_INDEXES_500_VALUES
+
+        output_absolute_path_to_file = utils.generate_sim_out_absolute_path_to_file(
+            Paths.SIM_OUTPUT,
+            file_name,
+            FileFormat.CSV,
+            self.__scenario,
+            self.__city
+        )
+        output_absolute_path_to_file_values = utils.generate_sim_out_absolute_path_to_file(
+            Paths.SIM_OUTPUT,
+            file_name_values,
+            FileFormat.CSV,
+            self.__scenario,
+            self.__city
+        )
+        utils.export_file_from_absolute_path(
+            output_absolute_path_to_file,
+            FileFormat.CSV,
+            content,
+            mode="a"
+        )
+        utils.export_file_from_absolute_path(
+            output_absolute_path_to_file_values,
+            FileFormat.CSV,
+            content,
+            mode="a"
+        )
+
+    def export_energy_indexes_obj(
+            self,
+            energy_indexes
+    ):
+        output_absolute_path = utils.generate_sim_out_absolute_path_to_file(
+            Paths.SIM_OUTPUT,
+            FileName.ENERGY_INDEXES,
+            FileFormat.JSON,
+            self.__scenario,
+            self.__city
+        )
+        utils.export_file_from_absolute_path(
+            output_absolute_path,
+            FileFormat.JSON,
+            energy_indexes.get_energy_indexes()
+        )
+
+    def export_global_indicators_obj(
+            self,
+            global_indicators
+    ):
+        output_absolute_path = utils.generate_sim_out_absolute_path_to_file(
+            Paths.SIM_OUTPUT,
+            FileName.GLOBAL_INDICATORS,
+            FileFormat.JSON,
+            self.__scenario,
+            self.__city
+        )
+        utils.export_file_from_absolute_path(
+            output_absolute_path,
+            FileFormat.JSON,
+            global_indicators.get_global_indicators()
+        )
+
+    def export_specific_indicators_obj(
+            self,
+            specific_indicators
+    ):
+        output_absolute_path = utils.generate_sim_out_absolute_path_to_file(
+            Paths.SIM_OUTPUT,
+            FileName.SPECIFIC_INDICATORS,
+            FileFormat.JSON,
+            self.__scenario,
+            self.__city
+        )
+        utils.export_file_from_absolute_path(
+            output_absolute_path,
+            FileFormat.JSON,
+            specific_indicators.get_specific_indicators()
+        )
 
     def export_simulator_performances(self):
         path = f"{os.getcwd()}/output/simulator_performances.csv"
@@ -306,6 +395,73 @@ class Printer:
             content += "percentage_rides_not_served,"
             content += "percentage_accepted,"
             content += "percentage_pending,"
+            content += "average_driver_rejections,"
+            content += "average_expected_waiting_time,"
+            content += "average_expected_waiting_time_vs_meeting_length,"
+            content += "average_expected_ride_time_vs_length,"
+            content += "average_expected_waiting_time_vs_average_waiting_time,"
+            content += "average_waiting_time,"
+            content += "average_waiting_time_vs_meeting_length,"
+            content += "average_ride_time_vs_length,"
+            content += "average_expected_meeting_length_vs_meeting_length,"
+            content += "average_expected_ride_length_vs_ride_length,"
+            content += "average_expected_price_vs_average_price,"
+            content += "average_surge_multiplier"
+            content += "\n"
+
+        rides_canceled = list(filter(lambda r: r["state"] in [RideState.CANCELED], rides_info))
+        rides_not_served = list(filter(lambda r: r["state"] in [RideState.NOT_SERVED], rides_info))
+        rides_accepted = list(filter(lambda r: r["state"] in [RideState.PICKUP, RideState.ON_ROAD, RideState.END], rides_info))
+        rides_pending = list(filter(lambda r: r["state"] == RideState.PENDING, rides_info))
+        rides_completed = list(filter(lambda r: r["state"] == RideState.END, rides_info))
+        rides_set = list(filter(lambda r: r["state"] in [RideState.PENDING, RideState.END, RideState.ON_ROAD, RideState.PICKUP, RideState.NOT_SERVED, RideState.CANCELED], rides_info))
+        rides_waiting_completed = list(filter(lambda r: r["state"] in [RideState.ON_ROAD, RideState.END], rides_info))
+
+        percentage_canceled = len(rides_canceled) / (len(rides_set)) if (len(rides_set)) > 0 else 0
+        percentage_not_accomplished = len(rides_not_served) / (len(rides_set)) if (len(rides_set)) > 0 else 0
+        percentage_accepted = len(rides_accepted) / (len(rides_set)) if (len(rides_set)) > 0 else 0
+        percentage_pending = len(rides_pending) / (len(rides_set)) if (len(rides_set)) > 0 else 0
+        average_driver_rejections = reduce(lambda sum, r: sum + len(r["request"]["rejections"]), rides_info, 0) / (len(rides_set)) if (len(rides_set)) > 0 else 0
+        average_expected_waiting_time = reduce(lambda sum, r: sum + r["stats"]["expected_meeting_duration"], rides_accepted, 0) / len(rides_accepted) if len(rides_accepted) > 0 else 0
+        average_expected_waiting_time_vs_meeting_length = reduce(lambda sum, r: sum + (r["stats"]["expected_meeting_duration"]/r["stats"]["expected_meeting_length"]), rides_accepted, 0) / len(rides_accepted) if len(rides_accepted) > 0 else 0
+        average_expected_ride_time_vs_length = reduce(lambda sum, r: sum + (r["stats"]["expected_ride_duration"]/r["stats"]["expected_ride_length"]), rides_accepted, 0) / len(rides_accepted) if len(rides_accepted) > 0 else 0
+        average_expected_waiting_time_vs_average_waiting_time = reduce(lambda sum, r: sum + (r["stats"]["expected_meeting_duration"]/r["stats"]["meeting_duration"]), rides_waiting_completed, 0) / len(rides_waiting_completed) if len(rides_waiting_completed) > 0 else 0
+        average_waiting_time = reduce(lambda sum, r: sum + r["stats"]["meeting_duration"], rides_waiting_completed, 0) / len(rides_waiting_completed) if len(rides_waiting_completed) > 0 else 0
+        average_waiting_time_vs_meeting_length = reduce(lambda sum, r: sum + (r["stats"]["meeting_duration"]/r["stats"]["meeting_length"]), rides_waiting_completed, 0) / len(rides_waiting_completed) if len(rides_waiting_completed) > 0 else 0
+        average_ride_time_vs_length = reduce(lambda sum, r: sum + (r["stats"]["ride_duration"]/r["stats"]["ride_length"]), rides_completed, 0) / len(rides_completed) if len(rides_completed) > 0 else 0
+        average_expected_meeting_length_vs_meeting_length = reduce(lambda sum, r: sum + (r["stats"]["expected_meeting_length"]/r["stats"]["meeting_length"]), rides_waiting_completed, 0) / len(rides_waiting_completed) if len(rides_waiting_completed) > 0 else 0
+        average_expected_ride_length_vs_ride_length = reduce(lambda sum, r: sum + (r["stats"]["expected_ride_length"]/r["stats"]["ride_length"]), rides_completed, 0) / len(rides_completed) if len(rides_completed) > 0 else 0
+        average_expected_price_vs_average_price = reduce(lambda sum, r: sum + (r["stats"]["expected_price"]/r["stats"]["expected_price"]), rides_completed, 0) / len(rides_completed) if len(rides_completed) > 0 else 0
+        average_surge_multipliers = reduce(lambda sum, r: sum + r["stats"]["surge_multiplier"], rides_accepted, 0) / len(rides_accepted) if len(rides_accepted) > 0 else 0
+
+        content += f"{int(timestamp)},"
+        content += f"{round(percentage_canceled,4)},"
+        content += f"{round(percentage_not_accomplished,4)},"
+        content += f"{round(percentage_accepted,4)},"
+        content += f"{round(percentage_pending,4)},"
+        content += f"{round(average_driver_rejections,4)},"
+        content += f"{round(average_expected_waiting_time,4)},"
+        content += f"{round(average_expected_waiting_time_vs_meeting_length,4)},"
+        content += f"{round(average_expected_ride_time_vs_length,4)},"
+        content += f"{round(average_expected_waiting_time_vs_average_waiting_time,4)},"
+        content += f"{round(average_waiting_time,4)},"
+        content += f"{round(average_waiting_time_vs_meeting_length,4)},"
+        content += f"{round(average_ride_time_vs_length,4)},"
+        content += f"{round(average_expected_meeting_length_vs_meeting_length,4)},"
+        content += f"{round(average_expected_ride_length_vs_ride_length,4)},"
+        content += f"{round(average_expected_price_vs_average_price,4)},"
+        content += f"{round(average_surge_multipliers,4)},"
+        content += "\n"
+        self.__global_indicators_content_v2 += content
+
+    def save_global_indicators_v3(self, timestamp, rides_info):
+        content = ""
+        if timestamp == 1:
+            content += "timestamp,"
+            content += "rides_canceled,"
+            content += "rides_not_served,"
+            content += "accepted,"
+            content += "pending,"
             content += "average_driver_rejections,"
             content += "average_expected_waiting_time,"
             content += "average_expected_waiting_time_vs_meeting_length,"

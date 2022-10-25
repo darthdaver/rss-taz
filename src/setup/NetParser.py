@@ -177,7 +177,8 @@ class NetParser():
                 Ride.CANCELED.value: 0,
                 Ride.NOT_SERVED.value: 0,
                 NetIdentifier.EDGES.value: [],
-                NetIdentifier.DISTANCE.value: centroids[taz_id]
+                NetIdentifier.DISTANCE.value: centroids[taz_id],
+                NetIdentifier.DRIVERS.value: {}
             }
             for edge_id in edges:
                 if edge_id in self.__edge_id_set:

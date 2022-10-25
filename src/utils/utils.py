@@ -10,6 +10,7 @@ from src.enum.setup.City import City
 from src.enum.setup.FileFormat import FileFormat
 from src.enum.setup.FileName import FileName
 from src.enum.setup.Dataset import Dataset
+from src.enum.setup.Scenario import Scenario
 from src.enum.identifiers.Api import Api as ApiIdentifier
 from src.enum.setup.Paths import Paths
 from xml.etree.ElementTree import ElementTree
@@ -29,7 +30,7 @@ def check_paths_exists(paths: list[[str, bool]]):
         check_path_exists(path, is_path_file=is_file)
 
 
-def export_file(file_path: Type[Paths], file_name: Type[FileName], file_format: Type[FileFormat], dataset: Type[Dataset],  content: Union[str, dict, Type[Element]], city: Union[Type[City], None]):
+def export_file(file_path: Type[Paths], file_name: Type[FileName], file_format: Type[FileFormat], dataset: Type[Dataset],  content: Union[str, dict, Type[Element]], city: Union[Type[City], None], mode: str = "w"):
     check_path_exists(file_path.value)
     complete_file_path = f"{os.path.join(file_path.value, dataset.value, file_format.value)}"
     city_prefix = f"{city.value}_" if not city is None else ""
@@ -38,38 +39,38 @@ def export_file(file_path: Type[Paths], file_name: Type[FileName], file_format: 
     print(absolute_path_to_file)
     if file_format == FileFormat.CSV:
         assert type(content) == str, f"utils.export_file - unknown content type: {type(content)} instead of str"
-        with open(absolute_path_to_file, "w") as csv_out_file:
+        with open(absolute_path_to_file, mode) as csv_out_file:
             csv_out_file.write(content)
         return
     elif file_format == FileFormat.JSON:
         assert type(content) == dict or type(content) == list, f"utils.export_file - unknown content type: {type(content)} instead of dict"
-        with open(absolute_path_to_file, "w") as json_out_file:
+        with open(absolute_path_to_file, mode) as json_out_file:
             json.dump(content, json_out_file)
         return
     elif file_format == FileFormat.XML:
         assert type(content) == Element, f"utils.export_file - unknown content type: {type(content)} instead of xml.ElementTree.Element"
         xml_str = minidom.parseString(ET.tostring(content)).toprettyxml(indent="   ")
-        with open(absolute_path_to_file, "w") as xml_out_file:
+        with open(absolute_path_to_file, mode) as xml_out_file:
             xml_out_file.write(xml_str)
         return
 
 
-def export_file_from_absolute_path(absolute_path_to_file: str, file_format: Type[FileFormat], content: Union[str, dict, Type[Element]]):
+def export_file_from_absolute_path(absolute_path_to_file: str, file_format: Type[FileFormat], content: Union[str, dict, Type[Element]], mode: str = "w"):
     check_path_exists(absolute_path_to_file, is_path_file=True)
     if file_format == FileFormat.CSV:
         assert type(content) == str, f"utils.export_file - unknown content type: {type(content)} instead of str"
-        with open(absolute_path_to_file, "w") as csv_out_file:
+        with open(absolute_path_to_file, mode) as csv_out_file:
             csv_out_file.write(content)
         return
     elif file_format == FileFormat.JSON:
         assert type(content) == dict or type(content) == list, f"utils.export_file - unknown content type: {type(content)} instead of dict"
-        with open(absolute_path_to_file, "w") as json_out_file:
+        with open(absolute_path_to_file, mode) as json_out_file:
             json.dump(content, json_out_file, indent=4)
         return
     elif file_format == FileFormat.XML:
         assert type(content) == Element, f"utils.export_file - unknown content type: {type(content)} instead of xml.ElementTree.Element"
         xml_str = minidom.parseString(ET.tostring(content)).toprettyxml(indent="   ")
-        with open(absolute_path_to_file, "w") as xml_out_file:
+        with open(absolute_path_to_file, mode) as xml_out_file:
             xml_out_file.write(xml_str)
         return
 
@@ -87,6 +88,12 @@ def generate_absolute_path_to_file(path: Type[Paths], file_name: Type[FileName],
 def generate_absolute_path_to_file(path: Type[Paths], file_name: Type[FileName], file_format: Type[FileFormat], dataset: Type[Dataset], city: Type[City]):
     complete_file_name = f"{city.value}_{dataset.value}_{file_name.value}"
     complete_path = f"{os.path.join(path.value, dataset.value, file_format.value)}"
+    return f"{os.path.join(complete_path, complete_file_name)}.{file_format.value}"
+
+
+def generate_sim_out_absolute_path_to_file(path: Type[Paths], file_name: Type[FileName], file_format: Type[FileFormat], scenario: Type[Scenario], city: Type[City]):
+    complete_file_name = f"{city.value}_{scenario.value}_{file_name.value}"
+    complete_path = f"{os.path.join(path.value, scenario.value, file_format.value)}"
     return f"{os.path.join(complete_path, complete_file_name)}.{file_format.value}"
 
 

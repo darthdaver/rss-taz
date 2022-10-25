@@ -10,6 +10,7 @@ class Paths(str, Enum):
     PROJECT_ROOT_PATH = PROJECT_ROOT_PATH
     TAZ = f"{os.path.join(PROJECT_ROOT_PATH, 'data', CITY, 'net', 'taz', 'modified', 'boundary')}"
     MOBILITY = f"{os.path.join(PROJECT_ROOT_PATH, 'data', CITY, 'mobility')}"
+    SIM_OUTPUT = f"{os.path.join(PROJECT_ROOT_PATH, 'data', CITY, 'output')}"
     EDGE = f"{os.path.join(PROJECT_ROOT_PATH, 'data', CITY, 'net', 'edge')}"
     CENTROIDS_TAZ = f"{os.path.join(PROJECT_ROOT_PATH, 'data', CITY, 'net', 'taz', 'modified', 'centroids')}"
     TAZ_EDGE = f"{os.path.join(PROJECT_ROOT_PATH, 'data', CITY, 'net', 'merge')}"

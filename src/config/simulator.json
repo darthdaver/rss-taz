@@ -1,6 +1,6 @@
 {
     "timer_remove_idle_driver": 500,
-    "type": "normal",
+    "city": "sf",
     "checkpoints": {
         "simulation_duration": 5000,
         "time_customer_generation": 80,
