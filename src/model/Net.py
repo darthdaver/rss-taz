@@ -124,7 +124,11 @@ class Net:
             if not self.check_connection_travel_time(src_analytics_taz_id, dst_analytics_taz_id):
                 return (None, None)
             src_edge = self.__sumo_net.getEdge(src_edge_id)
+            if src_edge.isSpecial():
+                src_edge = list(src_edge.getOutgoing().keys())[0]
             dst_random_edge = self.__sumo_net.getEdge(dst_random_edge_id)
+            if dst_random_edge.isSpecial():
+                dst_random_edge = list(dst_random_edge.getOutgoing().keys())[0]
             route, cost = self.__sumo_net.getOptimalPath(src_edge, dst_random_edge)
             if not route is None:
                 return (route, cost)
@@ -142,10 +146,15 @@ class Net:
         route, cost = self.generate_random_sumolib_route_in_taz(taz_id, src_edge_id, net_type)
         if route is not None:
             src_edge = self.__sumo_net.getEdge(src_edge_id)
+            if src_edge.isSpecial():
+                src_edge = list(src_edge.getOutgoing().keys())[0]
             dst_edge = route[-1]
+            if dst_edge.isSpecial():
+                dst_edge = list(dst_edge.getOutgoing().keys())[0]
             route_edge_id_list = self.convert_route_to_edge_id_list(route)
-            src_pos: float = round(random.uniform(0.01, src_edge.getLength()), 2) if src_pos is None else src_pos
-            dst_pos: float = round(random.uniform(0.01, dst_edge.getLength()), 2)
+            src_pos: float = round(src_edge.getLength()/2, 2) if src_pos is None else src_pos #round(random.uniform(0.01, src_edge.getLength()), 2) if src_pos is None else src_pos
+            dst_pos: float = round(dst_edge.getLength()/2, 2)
+            print(f"dst pos: {dst_pos}")
             sim_route = self.generate_sim_route_from_edge_id_list(
                 timestamp,
                 route_edge_id_list,
@@ -188,7 +197,11 @@ class Net:
             dst_edge_id: str
     ) -> Union[list[SumoEdge], None]:
         src_edge = self.__sumo_net.getEdge(src_edge_id)
+        if src_edge.isSpecial():
+            src_edge = list(src_edge.getOutgoing().keys())[0]
         dst_edge = self.__sumo_net.getEdge(dst_edge_id)
+        if dst_edge.isSpecial():
+            dst_edge = list(dst_edge.getOutgoing().keys())[0]
         src_analytics_taz_id = self.get_taz_id_from_edge_id(src_edge_id, NetType.ANALYTICS_NET)
         dst_analytics_taz_id = self.get_taz_id_from_edge_id(dst_edge_id, NetType.ANALYTICS_NET)
         if not self.check_connection_travel_time(src_analytics_taz_id, dst_analytics_taz_id):
@@ -330,20 +343,10 @@ class Net:
             route_edge_id_list = driver_info[DriverIdentifier.ROUTE.value][RouteIdentifier.EDGE_ID_LIST.value]
             traci_driver_route = traci.vehicle.getRoute(driver_id)
             if not len(route_edge_id_list) == len(traci_driver_route):
-                print(current_route_idx)
-                print(len(route_edge_id_list))
-                print(route_edge_id_list)
-                print(traci.vehicle.getRoute(driver_id))
-                print(driver_info)
-                raise Exception("out of index")
+                raise Exception("Net.is_arrived - out of index.")
             for idx, edge_id in enumerate(traci_driver_route):
                 if not edge_id == traci_driver_route[idx]:
-                    print(current_route_idx)
-                    print(len(route_edge_id_list))
-                    print(route_edge_id_list)
-                    print(traci.vehicle.getRoute(driver_id))
-                    print(driver_info)
-                    raise Exception("out of index")
+                    raise Exception("Net.is_arrived - out of index")
             if current_route_idx < 0:
                 return False
             if current_route_idx == (len(driver_route) - 1):

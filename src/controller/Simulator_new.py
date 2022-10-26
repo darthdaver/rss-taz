@@ -188,7 +188,7 @@ class Simulator:
             dst_taz_id
     ) -> Union[Type[Route], None]:
         driver = self.__drivers[driver_id]
-        driver_edge_id = traci.vehicle.getRoadID(driver_id)
+        driver_edge_id = traci.vehicle.getRoute(driver_id)[traci.vehicle.getRouteIndex(driver_id)]
         driver_pos = traci.vehicle.getLanePosition(driver_id)
         random_route = self.__net.generate_random_sim_route_in_taz(
             timestamp,
@@ -198,11 +198,15 @@ class Simulator:
         )
         if random_route is not None:
             try:
+                print("Before")
+                print(driver_edge_id)
+                print(driver_pos)
                 self.__start_sumo_route(
                     timestamp,
                     driver_id,
                     random_route
                 )
+                print("After")
             except:
                 raise Exception(f"Simulator.__generate_driver_random_route - Impossible to generate route for {driver_id}")
         return random_route
@@ -228,10 +232,6 @@ class Simulator:
             self.__drivers[driver_id] = driver
             self.__drivers_by_state[DriverState.IDLE.value].append(driver_id)
             self.__sim_drivers_ids.append(driver_id)
-            """self.__net.update_driver_taz_in_net(
-                driver_id,
-                route_edge_id_list[0]
-            )"""
 
     def __get_available_drivers(
             self,
@@ -272,7 +272,7 @@ class Simulator:
         for driver_id in driver_ids_snapshot:
             if self.__is_driver_still_active(driver_id):
                 driver_info = self.__drivers[driver_id].get_info()
-                driver_edge_id = traci.vehicle.getRoadID(driver_id)
+                driver_edge_id = traci.vehicle.getRoute(driver_id)[traci.vehicle.getRouteIndex(driver_id)]
                 driver_taz_id = self.__net.get_taz_id_from_edge_id(driver_edge_id, NetType.BOUNDARY_NET)
                 if not driver_info[CustomerIdentifier.CUSTOMER_STATE.value] == CustomerState.INACTIVE:
                     if taz_id == driver_taz_id:
@@ -430,7 +430,7 @@ class Simulator:
                     customer_dst_edge_id = customer_info[CustomerIdentifier.DST_EDGE_ID.value]
                     customer_src_pos = customer_info[CustomerIdentifier.SRC_POS.value]
                     customer_dst_pos = customer_info[CustomerIdentifier.DST_POS.value]
-                    driver_edge_id = traci.vehicle.getRoadID(driver_id)
+                    driver_edge_id = traci.vehicle.getRoute(driver_id)[traci.vehicle.getRouteIndex(driver_id)]
                     driver_src_pos = traci.vehicle.getLanePosition(driver_id)
                     meeting_route = self.__net.generate_sim_route_from_src_dst_edge_ids(
                         timestamp,
@@ -462,7 +462,7 @@ class Simulator:
                             driver_taz_id = self.__net.get_taz_id_from_edge_id(driver_edge_id)
                             self.__drivers_by_state[DriverState.RESPONDING.value].remove(driver_id)
                             self.__drivers_by_state[DriverState.IDLE.value].append(driver_id)
-                            try:
+                            """try:
                                 random_route = self.__generate_driver_random_route(
                                     timestamp,
                                     driver_id,
@@ -473,7 +473,7 @@ class Simulator:
                                 else:
                                     self.__remove_driver(driver_id)
                             except:
-                                self.__remove_driver(driver_id)
+                                self.__remove_driver(driver_id)"""
                             ride_info = self.__provider.ride_request_rejected(ride_info[RideIdentifier.RIDE_ID.value], driver_id)
                             ride_info = self.__provider.set_ride_request_state(ride_info[RideIdentifier.RIDE_ID.value], RideRequestState.REJECTED)
                             self.__global_indicators.rejected(timestamp)
@@ -525,7 +525,7 @@ class Simulator:
             dst_taz_id: str
     ):
         driver = self.__drivers[driver_id]
-        driver_edge_id = traci.vehicle.getRoadID(driver_id)
+        driver_edge_id = traci.vehicle.getRoute(driver_id)[traci.vehicle.getRouteIndex(driver_id)]
         driver_pos = traci.vehicle.getLanePosition(driver_id)
         try:
             random_route = self.__generate_driver_random_route(
@@ -615,7 +615,7 @@ class Simulator:
             route: RouteInfo,
             route_type: Type[RouteType] = RouteType.SUMO
     ):
-        driver_edge_id = traci.vehicle.getRoadID(driver_id)
+        driver_edge_id = traci.vehicle.getRoute(driver_id)[traci.vehicle.getRouteIndex(driver_id)]
         driver_edge = self.__sumo_net.getEdge(driver_edge_id)
         driver_edge_ids_outgoings = list(map(lambda e: e.getID(), driver_edge.getOutgoing()))
         driver_pos = traci.vehicle.getLanePosition(driver_id)
@@ -822,9 +822,12 @@ class Simulator:
         dst_edge = self.__sumo_net.getEdge(dst_edge_id)
         if stop_pos == -1:
             dst_edge_length = dst_edge.getLength()
-            stop_pos = random.random() * dst_edge_length
+            stop_pos = round(dst_edge_length/2,2) # random.random() * dst_edge_length
+        if stop_pos < 1.0:
+            raise Exception(f"Simulation.__set_driver_route - Raised exception to avoid sumo bug on stop pos < 1 {stop_pos}")
         try:
             route_id = route.get_route_id()
+            print(f"stop pos: {stop_pos}")
             traci.vehicle.setRouteID(driver_id, route_id)
             traci.vehicle.setStop(driver_id, dst_edge_id, stop_pos, duration=duration, flags=flags)
         except:
@@ -895,7 +898,7 @@ class Simulator:
     ):
         def __start_new_random_route(driver_info):
             driver_id = driver_info[DriverIdentifiers.DRIVER_ID.value]
-            driver_edge_id = traci.vehicle.getRoadID(driver_id)
+            driver_edge_id = traci.vehicle.getRoute(driver_id)[traci.vehicle.getRouteIndex(driver_id)]
             driver_pos = traci.vehicle.getLanePosition(driver_id)
             driver_taz_id = self.__net.get_taz_id_from_edge_id(driver_edge_id, NetType.BOUNDARY_NET)
             try:
@@ -936,7 +939,7 @@ class Simulator:
             driver = self.__drivers[driver_id]
             driver_info = driver.get_info()
             driver_state = driver_info[DriverIdentifiers.DRIVER_STATE.value]
-            driver_edge_id = traci.vehicle.getRoadID(driver_id)
+            driver_edge_id = traci.vehicle.getRoute(driver_id)[traci.vehicle.getRouteIndex(driver_id)]
             driver_taz_id = self.__net.get_taz_id_from_edge_id(driver_edge_id, NetType.BOUNDARY_NET)
             driver_taz_info = self.__net.get_taz_info(driver_taz_id)
             driver.update_current_edge(driver_edge_id)
@@ -1032,7 +1035,7 @@ class Simulator:
                 customer = self.__customers[ride_info[RideIdentifier.CUSTOMER_ID.value]]
                 customer_info = customer.get_info()
                 customer_id = customer_info[CustomerIdentifier.CUSTOMER_ID.value]
-                driver_current_edge_id = traci.vehicle.getRoadID(driver_id)
+                driver_current_edge_id = traci.vehicle.getRoute(driver_id)[traci.vehicle.getRouteIndex(driver_id)]
                 driver_current_pos = traci.vehicle.getLanePosition(driver_id)
                 dst_route = self.__net.generate_sim_route_from_src_dst_edge_ids(
                     timestamp,
@@ -1134,7 +1137,7 @@ class Simulator:
                         ride_info[RideIdentifier.RIDE_STATS.value][RideIdentifier.STAT_EXPECTED_PRICE.value]
                     )
                     # print(f"Simulator.__update_rides_state | Driver {driver_info['id']} - generate random route")
-                    driver_edge_id = traci.vehicle.getRoadID(driver_id)
+                    driver_edge_id = traci.vehicle.getRoute(driver_id)[traci.vehicle.getRouteIndex(driver_id)]
                     driver_pos = traci.vehicle.getLanePosition(driver_id)
                     driver_taz_id = self.__net.get_taz_id_from_edge_id(driver_edge_id, NetType.BOUNDARY_NET)
                     try:
@@ -1252,8 +1255,7 @@ class Simulator:
                         customer_gen_info[CustomerIdentifier.DST_POS.value]
                     )
                 finish = time.perf_counter()
-                #print(f"Customer generation in {round(finish - start, 4)} second(s).")
-                #self.check_route_exist()
+                print(f"Customer generation in {round(finish - start, 4)} second(s).")
                 simulation_performances["customer_generation"] = round(finish - start, 4)
                 start = time.perf_counter()
                 for driver_gen_info in drivers_to_generate:
@@ -1265,70 +1267,60 @@ class Simulator:
                         driver_gen_info[DriverIdentifiers.DST_POS.value]
                     )
                 finish = time.perf_counter()
-                #print(f"Driver generation in {round(finish - start, 4)} second(s).")
-                #self.check_route_exist()
+                print(f"Driver generation in {round(finish - start, 4)} second(s).")
                 simulation_performances["driver_generation"] = round(finish - start, 4)
                 start = time.perf_counter()
                 self.__check_drivers_list(timestamp)
                 finish = time.perf_counter()
-                #print(f"Checked drivers list in {round(finish - start, 4)} second(s).")
-                #self.check_route_exist()
+                print(f"Checked drivers list in {round(finish - start, 4)} second(s).")
                 simulation_performances["check_driver_list"] = round(finish - start, 4)
                 self.__check_customers_list()
                 finish = time.perf_counter()
-                #print(f"Checked customers list in {round(finish - start, 4)} second(s).")
-                #self.check_route_exist()
+                print(f"Checked customers list in {round(finish - start, 4)} second(s).")
                 simulation_performances["check_customer_list"] = round(finish - start, 4)
                 if utils.random_choice(0.8):
                     start = time.perf_counter()
                     self.__generate_customer_requests(timestamp)
                     finish = time.perf_counter()
-                    #print(f"Generated customer requests in {round(finish - start, 4)} second(s).")
-                    #self.check_route_exist()
+                    print(f"Generated customer requests in {round(finish - start, 4)} second(s).")
                     simulation_performances["generated_customer_requests"] = round(finish - start, 4)
                 else:
                     simulation_performances["generated_customer_requests"] = 0.0
-                    #self.check_route_exist()
+                    self.check_route_exist()
                 start = time.perf_counter()
                 self.__process_rides(timestamp)
                 finish = time.perf_counter()
-                #print(f"Processed rides in {round(finish - start, 4)} second(s).")
-                #self.check_route_exist()
+                print(f"Processed rides in {round(finish - start, 4)} second(s).")
                 simulation_performances["processed_rides"] = round(finish - start, 4)
                 start = time.perf_counter()
                 self.__manage_pending_request(timestamp)
                 finish = time.perf_counter()
-                #print(f"Managed pending requests in {round(finish - start, 4)} second(s).")
-                #self.check_route_exist()
+                print(f"Managed pending requests in {round(finish - start, 4)} second(s).")
                 simulation_performances["managed_pending_requests"] = round(finish - start, 4)
                 if timestamp > 0 and timestamp % 20.0 == 0:
                     start = time.perf_counter()
                     self.__update_surge_multiplier(timestamp)
                     finish = time.perf_counter()
-                    #print(f"Updated surge multipliers in {round(finish - start, 4)} second(s).")
-                    #self.check_route_exist()
+                    print(f"Updated surge multipliers in {round(finish - start, 4)} second(s).")
                     simulation_performances["updated_surge_multipliers"] = round(finish - start, 4)
                 else:
                     simulation_performances["updated_surge_multipliers"] = 0.0
                 start = time.perf_counter()
                 self.__update_drivers(timestamp)
                 finish = time.perf_counter()
-                #print(f"Updated drivers in {round(finish - start, 4)} second(s).")
-                #self.check_route_exist()
+                print(f"Updated drivers in {round(finish - start, 4)} second(s).")
                 simulation_performances["updated_drivers"] = round(finish - start, 4)
                 start = time.perf_counter()
                 self.__update_rides_state(timestamp)
                 finish = time.perf_counter()
-                #print(f"Updated rides state in {round(finish - start, 4)} second(s).")
-                #self.check_route_exist()
+                print(f"Updated rides state in {round(finish - start, 4)} second(s).")
                 simulation_performances["updated_rides_state"] = round(finish - start, 4)
                 start = time.perf_counter()
                 if timestamp > 0 and (timestamp % self.__simulator_setup[ConfigEnum.CHECKPOINTS.value][ConfigEnum.TIME_MOVE_DRIVER.value]) == 0.0:
                     start = time.perf_counter()
                     self.__update_driver_movements(timestamp)
                     finish = time.perf_counter()
-                    #print(f"Updated drivers movements in {round(finish - start, 4)} second(s).")
-                    #self.check_route_exist()
+                    print(f"Updated drivers movements in {round(finish - start, 4)} second(s).")
                     simulation_performances["updated_drivers_movements"] = round(finish - start, 4)
                 else:
                     simulation_performances["updated_drivers_movements"] = 0.0
@@ -1354,11 +1346,11 @@ class Simulator:
                 self.export_statistics()
                 raise Exception("A Fatal error occurred in Simulator.")
             finish_iteration = time.perf_counter()
-            #print(f"Completed iteration in {round(finish_iteration-start_iteration, 4)} seconds.")
+            print(f"Completed iteration in {round(finish_iteration-start_iteration, 4)} seconds.")
             simulation_performances["completed_iteration"] = round(finish_iteration - start_iteration, 4)
             self.__printer.save_simulator_performances(timestamp, simulation_performances)
         finish_simulation = time.perf_counter()
-        #print(f"Simulation ended in {round(finish_simulation - start_simulation, 4)} seconds.")
+        print(f"Simulation ended in {round(finish_simulation - start_simulation, 4)} seconds.")
         traci.close()
         sys.stdout.flush()
 

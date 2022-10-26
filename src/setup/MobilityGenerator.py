@@ -134,7 +134,7 @@ class MobilityGenerator():
         if self.__check_edge_allows_vehicle_type(src_edge):
             src_edge_lane_id = src_edge.getLanes()[0].getID()
             src_edge_length = src_edge.getLength()
-            src_pos: float = round(random.uniform(0.01, src_edge_length), 2)
+            src_pos: float = round(src_edge_length/2, 2) #round(random.uniform(0.01, src_edge_length), 2)
             src_taz_id = self.__net.get_taz_id_from_edge_id(src_edge_id, NetType.ANALYTICS_NET)
             ride_length: Type[RideEnum] = RideEnum(utils.select_from_distribution(self.__ride_setup[ConfigEnum.ROUTE_LENGTH_DISTRIBUTION]))
             dst_edge_id: str = self.__net.generate_destination_edge(taz_id, ride_length, net_type)
@@ -142,7 +142,7 @@ class MobilityGenerator():
                 return
             dst_edge = self.__sumo_net.getEdge(dst_edge_id)
             dst_edge_length = dst_edge.getLength()
-            dst_pos = round(random.uniform(0.01, dst_edge_length), 2)
+            dst_pos = round(dst_edge_length/2, 2) # round(random.uniform(0.01, dst_edge_length), 2)
             dst_taz_id = self.__net.get_taz_id_from_edge_id(dst_edge_id, NetType.ANALYTICS_NET)
             if self.__check_edge_allows_vehicle_type(dst_edge) and self.__net.check_connection_travel_time(src_taz_id, dst_taz_id):
                 personality: Type[PersonalityType] = self.__assign_personality(personality_distribution)
@@ -190,8 +190,8 @@ class MobilityGenerator():
                 dst_edge = route_edge_list[-1]
                 dst_edge_length = dst_edge.getLength()
                 route_str: str = self.__net.convert_route_to_str(route_edge_list)
-                src_pos: float = round(random.uniform(0.01, src_edge_length), 2)
-                dst_pos: float = round(random.uniform(0.01, dst_edge_length), 2)
+                src_pos: float = round(src_edge_length/2, 2) # round(random.uniform(0.01, src_edge_length), 2)
+                dst_pos: float = round(dst_edge_length/2, 2) # round(random.uniform(0.01, dst_edge_length), 2)
                 driver_id = f"driver_{self.__driver_counter}"
                 self.__driver_counter += 1
                 driver_attr = {
