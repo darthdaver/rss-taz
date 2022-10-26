@@ -1078,11 +1078,8 @@ class Simulator:
                         dst_route_info[RouteIdentifier.SRC_POS.value],
                         dst_route_info[RouteIdentifier.DST_POS.value]
                     )
-                print("Refined route")
-                print(f"Arrived - dst route {dst_route}")
                 if dst_route is not None:
                     try:
-                        print("Try start road route")
                         self.__start_sumo_route(
                             timestamp,
                             driver_id,
@@ -1090,10 +1087,8 @@ class Simulator:
                             customer_id
                         )
                     except:
-                        print("Failed")
                         self.__safe_remotion(driver_id, customer_id, ride_id)
                         return
-                    print("On road update")
                     customer_info = customer.update_on_road()
                     driver_info = driver.update_on_road(dst_route)
                     self.__drivers_by_state[DriverState.PICKUP.value].remove(driver_id)
