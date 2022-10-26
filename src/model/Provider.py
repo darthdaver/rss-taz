@@ -225,8 +225,7 @@ class Provider:
         ride = self.__rides[ride_info[RideIdentifier.RIDE_ID.value]]
         if ride_info[RideIdentifier.REQUEST.value][RideIdentifier.RIDE_STATE.value] in [RideRequestState.REJECTED, RideRequestState.UNPROCESSED]:
             self.set_ride_request_state(ride_info[RideIdentifier.RIDE_ID.value], RideRequestState.SEARCHING_CANDIDATES)
-            free_drivers_info = self.__free_drivers_info(drivers_info)
-            free_drivers_ids = list(map(lambda d: d[DriverIdentifier.DRIVER_ID.value], free_drivers_info))
+            free_drivers_ids = drivers_info.keys()
             candidate = self.__select_driver_candidate(ride_info, free_drivers_ids)
             if candidate:
                 ride_info = ride.set_candidate(candidate)
@@ -350,13 +349,12 @@ class Provider:
             ride_id: str,
             driver_id: str,
             meeting_route: Type[Route],
-            destination_route: Type[Route],
             stats: Dict
     ):
         ride = self.__rides[ride_id]
         ride_info = ride.get_info()
         self.set_ride_request_state(ride_info[RideIdentifier.RIDE_ID.value], RideRequestState.ACCEPTED)
-        return ride.update_accepted(driver_id, meeting_route, destination_route, stats)
+        return ride.update_accepted(driver_id, meeting_route, stats)
 
     def update_ride_pickup(
             self,
@@ -372,6 +370,7 @@ class Provider:
     def update_ride_on_road(
             self,
             ride_id: str,
+            dst_route: Type[Route],
             stats: Dict
     ):
         ride = self.__rides[ride_id]
@@ -379,7 +378,10 @@ class Provider:
         assert ride_info[RideIdentifier.RIDE_STATE.value] == RideState.PICKUP, f"Provider.update_ride_pickup - unexpected ride state {ride_info['state']} for {ride_id}"
         self.__rides_by_state[RideState.PICKUP.value].remove(ride_id)
         self.__rides_by_state[RideState.ON_ROAD.value].append(ride_id)
-        return ride.update_on_road(stats)
+        return ride.update_on_road(
+            dst_route,
+            stats
+        )
 
     def update_ride_end(
             self,
@@ -403,13 +405,6 @@ class Provider:
             if driver_info[DriverIdentifier.DRIVER_ID.value] in traci_drivers_ids_list:
                 free_drivers.append(driver_info)
         free_drivers = []
-        """Parallel(
-                n_jobs=self.__cpu_cores,
-                backend="threading"
-        )(
-            delayed(__filter_free_drivers)(drivers_info)
-            for drivers_info in drivers_info.values()
-        )"""
         for drivers_info in drivers_info.values():
             __filter_free_drivers(drivers_info)
         return free_drivers

@@ -34,7 +34,7 @@ class MobilityGenerator():
         self.__begin = begin
         self.__end = end
         self.__sumo_net = sumolib.net.readNet(FileSetup.NET_SUMO.value, withInternal=True)
-        self.__generation_dict = {str(i): {HumanEnum.CUSTOMERS.value: [], HumanEnum.DRIVERS.value: []} for i in range(begin, end)}
+        self.__generation_dict = {str(i): {HumanEnum.CUSTOMERS.value: [], HumanEnum.DRIVERS.value: []} for i in range(begin, end+1)}
         self.__ride_setup = utils.read_file_from_absolute_path_to_file(FileSetup.MOBILITY_RIDE.value, FileFormat.JSON)
         self.__pickups_file = utils.read_file_from_absolute_path_to_file(FileSetup.PICKUPS.value, FileFormat.JSON)
         self.__xml_root = ET.Element(MobilityXMLEnum.ROUTES.value)

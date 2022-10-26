@@ -26,7 +26,7 @@ class Ride:
         self.__driver_id = None
         self.__src_edge_id = src_edge_id
         self.__dst_edge_id = dst_edge_id
-        self.__src_pos: src_pos
+        self.__src_pos = src_pos
         self.__dst_pos = dst_pos
         self.__state = RideState.REQUESTED
         self.__request = {
@@ -62,6 +62,10 @@ class Ride:
             RideIdentifiers.RIDE_ID.value: self.__id,
             RideIdentifiers.CUSTOMER_ID.value: self.__customer_id,
             RideIdentifiers.DRIVER_ID.value: self.__driver_id,
+            RideIdentifiers.SRC_EDGE_ID: self.__src_edge_id,
+            RideIdentifiers.DST_EDGE_ID: self.__dst_edge_id,
+            RideIdentifiers.SRC_POS: self.__src_pos,
+            RideIdentifiers.DST_POS: self.__dst_pos,
             RideIdentifiers.REQUEST.value: {
                 **self.__request
             },
@@ -130,8 +134,13 @@ class Ride:
         self.__set_stats(stats)
         return self.get_info()
 
-    def update_on_road(self, stats: Type[RideStats]) -> RideInfo:
+    def update_on_road(
+            self,
+            dst_route: Type[Route],
+            stats: Type[RideStats]
+    ) -> RideInfo:
         self.__state = RideState.ON_ROAD
+        self.__set_route(RouteIdentifiers.DESTINATION_ROUTE, dst_route)
         self.__set_stats(stats)
         return self.get_info()
 
@@ -140,10 +149,9 @@ class Ride:
         self.__stats[RideIdentifiers.STAT_TIMESTAMP_REQUEST.value] = timestamp
         return self.get_info()
 
-    def update_accepted(self, driver_id: str, meeting_route: Type[Route], destination_route: Type[Route], stats: Type[RideStats])-> RideInfo:
+    def update_accepted(self, driver_id: str, meeting_route: Type[Route], stats: Type[RideStats])-> RideInfo:
         self.__driver_id = driver_id
         self.__set_route(RouteIdentifiers.MEETING_ROUTE, meeting_route)
-        self.__set_route(RouteIdentifiers.DESTINATION_ROUTE, destination_route)
         self.__set_stats(stats)
         self.__request[RequestIdentifiers.REQUEST_STATE.value] = RideRequestState.ACCEPTED
         return self.get_info()

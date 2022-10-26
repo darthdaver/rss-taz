@@ -287,8 +287,6 @@ class Simulator:
         driver_ids_snapshot = [*self.__drivers.keys()]
         for driver_id in driver_ids_snapshot:
             driver_info = self.__drivers[driver_id].get_info()
-            if driver_info[DriverIdentifiers.ROUTE.value] is None:
-                print(driver_info)
             assert driver_info[DriverIdentifiers.ROUTE.value] is not None, "Simulator.__get_drivers_info_moving_in_taz - driver route not found"
             driver_route = driver_info[DriverIdentifiers.ROUTE.value]
             dst_taz_id = driver_route[RouteIdentifier.DST_EDGE_ID.value]
@@ -442,92 +440,65 @@ class Simulator:
                         customer_src_pos
                     )
                     if meeting_route is not None:
-                        destination_route = self.__net.generate_sim_route_from_src_dst_edge_ids(
-                            timestamp,
-                            customer_edge_id,
-                            customer_dst_edge_id,
-                            customer_src_pos,
-                            customer_dst_pos
-                        )
-                        if destination_route is not None:
-                            assert ride_info[RideIdentifier.REQUEST.value][RequestIdentifier.CURRENT_CANDIDATE.value] is not None, "Simulator.__manage_pending_request - candidate undefined on ride request response"
-                            customer = self.__customers[customer_id]
-                            expected_meeting_travel_time = meeting_route.get_expected_travel_time()
-                            expected_meeting_length = meeting_route.get_expected_length()
-                            expected_ride_travel_time = destination_route.get_expected_travel_time()
-                            expected_ride_length = destination_route.get_expected_length()
-                            expected_price = self.__provider.compute_price(
-                                expected_ride_travel_time,
-                                expected_ride_length,
-                                surge_multiplier
-                            )
-                            stats = {
-                                RideIdentifier.STAT_TIMESTAMP_PICKUP.value: timestamp,
-                                RideIdentifier.STAT_EXPECTED_MEETING_LENGTH.value: expected_meeting_length,
-                                RideIdentifier.STAT_EXPECTED_MEETING_TRAVEL_TIME.value: expected_meeting_travel_time,
-                                RideIdentifier.STAT_EXPECTED_PRICE.value: expected_price,
-                                RideIdentifier.STAT_EXPECTED_RIDE_TRAVEL_TIME.value: expected_ride_travel_time,
-                                RideIdentifier.STAT_EXPECTED_RIDE_LENGTH.value: expected_ride_length,
-                                RideIdentifier.STAT_SURGE_MULTIPLIER.value: surge_multiplier
-                            }
-                            try:
-                                self.__start_sumo_route(
-                                    timestamp,
-                                    driver_id,
-                                    meeting_route,
-                                    customer_id
-                                )
-                            except:
-                                driver_info = driver.reject_request()
-                                driver_taz_id = self.__net.get_taz_id_from_edge_id(driver_edge_id)
-                                self.__drivers_by_state[DriverState.RESPONDING.value].remove(driver_id)
-                                self.__drivers_by_state[DriverState.IDLE.value].append(driver_id)
-                                try:
-                                    random_route = self.__generate_driver_random_route(
-                                        timestamp,
-                                        driver_id,
-                                        driver_taz_id
-                                    )
-                                    if random_route is not None:
-                                        driver.set_route(random_route)
-                                    else:
-                                        self.__remove_driver(driver_id)
-                                except:
-                                    self.__remove_driver(driver_id)
-                                ride_info = self.__provider.ride_request_rejected(ride_info[RideIdentifier.RIDE_ID.value], driver_id)
-                                ride_info = self.__provider.set_ride_request_state(ride_info[RideIdentifier.RIDE_ID.value], RideRequestState.REJECTED)
-                                self.__global_indicators.rejected(timestamp)
-                                return
-                            customer_info = customer.update_pickup()
-                            driver_info = driver.update_pickup(meeting_route)
-                            self.__drivers_by_state[DriverState.RESPONDING.value].remove(driver_id)
-                            self.__drivers_by_state[DriverState.PICKUP.value].append(driver_id)
-                            self.__customers_by_state[CustomerState.PENDING.value].remove(customer_id)
-                            self.__customers_by_state[CustomerState.PICKUP.value].append(customer_id)
-                            ride_info = self.__provider.update_ride_accepted(
-                                ride_info[RideIdentifier.RIDE_ID.value],
+                        assert ride_info[RideIdentifier.REQUEST.value][RequestIdentifier.CURRENT_CANDIDATE.value] is not None, "Simulator.__manage_pending_request - candidate undefined on ride request response"
+                        customer = self.__customers[customer_id]
+                        expected_meeting_travel_time = meeting_route.get_expected_travel_time()
+                        expected_meeting_length = meeting_route.get_expected_length()
+                        stats = {
+                            RideIdentifier.STAT_TIMESTAMP_PICKUP.value: timestamp,
+                            RideIdentifier.STAT_EXPECTED_MEETING_LENGTH.value: expected_meeting_length,
+                            RideIdentifier.STAT_EXPECTED_MEETING_TRAVEL_TIME.value: expected_meeting_travel_time,
+                            RideIdentifier.STAT_SURGE_MULTIPLIER.value: surge_multiplier
+                        }
+                        try:
+                            self.__start_sumo_route(
+                                timestamp,
                                 driver_id,
                                 meeting_route,
-                                destination_route,
-                                stats
+                                customer_id
                             )
-                            self.__provider.update_ride_pickup(ride_info[RideIdentifier.RIDE_ID.value])
-                            self.__printer.save_ride_assignation(
-                                timestamp,
-                                ride_info[RideIdentifier.RIDE_ID.value],
-                                customer_info[CustomerIdentifier.CUSTOMER_ID.value],
-                                driver_id
-                            )
-                            self.__energy_indexes.accepted_request(timestamp)
-                            self.__global_indicators.accepted_request(timestamp)
-                        else:
-                            #print("Simulator.__manage_pending_request - destination route not found.")
+                        except:
+                            driver_info = driver.reject_request()
+                            driver_taz_id = self.__net.get_taz_id_from_edge_id(driver_edge_id)
+                            self.__drivers_by_state[DriverState.RESPONDING.value].remove(driver_id)
+                            self.__drivers_by_state[DriverState.IDLE.value].append(driver_id)
+                            try:
+                                random_route = self.__generate_driver_random_route(
+                                    timestamp,
+                                    driver_id,
+                                    driver_taz_id
+                                )
+                                if random_route is not None:
+                                    driver.set_route(random_route)
+                                else:
+                                    self.__remove_driver(driver_id)
+                            except:
+                                self.__remove_driver(driver_id)
+                            ride_info = self.__provider.ride_request_rejected(ride_info[RideIdentifier.RIDE_ID.value], driver_id)
+                            ride_info = self.__provider.set_ride_request_state(ride_info[RideIdentifier.RIDE_ID.value], RideRequestState.REJECTED)
                             self.__global_indicators.rejected(timestamp)
-                            __route_failure_repair(
-                                ride_info,
-                                customer_id,
-                                driver_id
-                            )
+                            return
+                        customer_info = customer.update_pickup()
+                        driver_info = driver.update_pickup(meeting_route)
+                        self.__drivers_by_state[DriverState.RESPONDING.value].remove(driver_id)
+                        self.__drivers_by_state[DriverState.PICKUP.value].append(driver_id)
+                        self.__customers_by_state[CustomerState.PENDING.value].remove(customer_id)
+                        self.__customers_by_state[CustomerState.PICKUP.value].append(customer_id)
+                        ride_info = self.__provider.update_ride_accepted(
+                            ride_info[RideIdentifier.RIDE_ID.value],
+                            driver_id,
+                            meeting_route,
+                            stats
+                        )
+                        self.__provider.update_ride_pickup(ride_info[RideIdentifier.RIDE_ID.value])
+                        self.__printer.save_ride_assignation(
+                            timestamp,
+                            ride_info[RideIdentifier.RIDE_ID.value],
+                            customer_info[CustomerIdentifier.CUSTOMER_ID.value],
+                            driver_id
+                        )
+                        self.__energy_indexes.accepted_request(timestamp)
+                        self.__global_indicators.accepted_request(timestamp)
                     else:
                         #print("Simulator.__manage_pending_request - meeting route not found.")
                         self.__global_indicators.rejected(timestamp)
@@ -818,10 +789,6 @@ class Simulator:
                 taz_id,
                 statistics
             )
-            #self.__printer.save_tazs_info_agents(
-            #    timestamp,
-            #    statistics
-            #)
 
     def __safe_remotion(
             self,
@@ -978,11 +945,14 @@ class Simulator:
                 if self.__net.is_arrived(driver_info):
                     try:
                         random_route, driver_info = __start_new_random_route(driver_info)
-                        driver_info = driver.update_end_moving(random_route)
-                        self.__drivers_by_state[DriverState.MOVING.value].remove(
-                            driver_info[DriverIdentifiers.DRIVER_ID.value])
-                        self.__drivers_by_state[DriverState.IDLE.value].append(
-                            driver_info[DriverIdentifiers.DRIVER_ID.value])
+                        if random_route is not None:
+                            driver_info = driver.update_end_moving(random_route)
+                            self.__drivers_by_state[DriverState.MOVING.value].remove(
+                                driver_info[DriverIdentifiers.DRIVER_ID.value])
+                            self.__drivers_by_state[DriverState.IDLE.value].append(
+                                driver_info[DriverIdentifiers.DRIVER_ID.value])
+                        else:
+                            self.__remove_driver(driver_id)
                     except:  ### generate new driver
                         self.__remove_driver(driver_id)
                         return
@@ -1005,7 +975,15 @@ class Simulator:
                 if self.__net.is_arrived(driver_info):
                     try:
                         random_route, driver_info = __start_new_random_route(driver_info)
-                        driver.set_route(random_route)
+                        if random_route is not None:
+                            driver.set_route(random_route)
+                        else:
+                            if driver_state == DriverState.RESPONDING:
+                                __remove_driver_responding(driver_info)
+                                self.__global_indicators.rejected(timestamp)
+                            else:
+                                self.__remove_driver(driver_id)
+                            return
                     except:  ### generate new driver
                         if driver_state == DriverState.RESPONDING:
                             __remove_driver_responding(driver_info)
@@ -1013,11 +991,6 @@ class Simulator:
                         else:
                             self.__remove_driver(driver_id)
                         return
-            """self.__net.update_driver_taz_in_net(
-                driver_id,
-                driver_edge_id
-            )"""
-            driver.update_current_edge(driver_edge_id)
 
 
     def __update_driver_movements(
@@ -1059,25 +1032,15 @@ class Simulator:
                 customer = self.__customers[ride_info[RideIdentifier.CUSTOMER_ID.value]]
                 customer_info = customer.get_info()
                 customer_id = customer_info[CustomerIdentifier.CUSTOMER_ID.value]
-                assert not ride_info[RideIdentifier.ROUTES.value][RouteIdentifier.DESTINATION_ROUTE.value] == None, "Simulator.__update_rides_state - destination route not found on pickup."
-                dst_route_info = self.__provider.get_ride_destination_route_info(ride_id)
-                dst_route_edge_id_list = dst_route_info[RouteIdentifier.EDGE_ID_LIST]
-                driver_current_edge = traci.vehicle.getRoadID(driver_id)
-                if not driver_current_edge == dst_route_edge_id_list[0]:
-                    ride_info, dst_route = self.__refine_ride_route(
-                        timestamp,
-                        driver_id,
-                        ride_id,
-                        dst_route_info
-                    )
-                else:
-                    dst_route = self.__net.generate_sim_route_from_src_dst_edge_ids(
-                        timestamp,
-                        dst_route_info[RouteIdentifier.SRC_EDGE_ID.value],
-                        dst_route_info[RouteIdentifier.DST_EDGE_ID.value],
-                        dst_route_info[RouteIdentifier.SRC_POS.value],
-                        dst_route_info[RouteIdentifier.DST_POS.value]
-                    )
+                driver_current_edge_id = traci.vehicle.getRoadID(driver_id)
+                driver_current_pos = traci.vehicle.getLanePosition(driver_id)
+                dst_route = self.__net.generate_sim_route_from_src_dst_edge_ids(
+                    timestamp,
+                    driver_current_edge_id,
+                    ride_info[RideIdentifier.DST_EDGE_ID.value],
+                    driver_current_pos,
+                    ride_info[RideIdentifier.DST_POS.value]
+                )
                 if dst_route is not None:
                     try:
                         self.__start_sumo_route(
@@ -1091,6 +1054,16 @@ class Simulator:
                         return
                     customer_info = customer.update_on_road()
                     driver_info = driver.update_on_road(dst_route)
+
+                    surge_multiplier = ride_info[RideIdentifier.RIDE_STATS.value][RideIdentifier.STAT_SURGE_MULTIPLIER.value]
+                    expected_ride_travel_time = dst_route.get_expected_travel_time()
+                    expected_ride_length = dst_route.get_expected_length()
+                    expected_price = self.__provider.compute_price(
+                        expected_ride_travel_time,
+                        expected_ride_length,
+                        surge_multiplier
+                    )
+
                     self.__drivers_by_state[DriverState.PICKUP.value].remove(driver_id)
                     self.__drivers_by_state[DriverState.ON_ROAD.value].append(driver_id)
                     self.__customers_by_state[CustomerState.PICKUP.value].remove(customer_id)
@@ -1104,11 +1077,14 @@ class Simulator:
                     stats = {
                         RideIdentifier.STAT_TIMESTAMP_ON_ROAD.value: timestamp,
                         RideIdentifier.STAT_MEETING_TRAVEL_TIME: meeting_travel_time,
-                        RideIdentifier.STAT_MEETING_LENGTH: meeting_length
+                        RideIdentifier.STAT_MEETING_LENGTH: meeting_length,
+                        RideIdentifier.STAT_EXPECTED_PRICE.value: expected_price,
+                        RideIdentifier.STAT_EXPECTED_RIDE_TRAVEL_TIME.value: expected_ride_travel_time,
+                        RideIdentifier.STAT_EXPECTED_RIDE_LENGTH.value: expected_ride_length,
                     }
-                    ride_info = self.__provider.update_ride_on_road(ride_id, stats)
+                    ride_info = self.__provider.update_ride_on_road(ride_id, dst_route, stats)
                 else:
-                    print(f"Simulator.__update_rides_state - Impossible to generate a refined route from {driver_current_edge} to {dst_route_edge_id_list[-1]}.")
+                    print(f"Simulator.__update_rides_state - Impossible to generate a refined route from {driver_current_edge_id} to {ride_info[RideIdentifier.DST_EDGE_ID.value]}.")
                     self.__safe_remotion(driver_id, customer_id, ride_id)
 
         def __update_on_road_ride(ride_info: Type[RideInfo]):
@@ -1276,8 +1252,8 @@ class Simulator:
                         customer_gen_info[CustomerIdentifier.DST_POS.value]
                     )
                 finish = time.perf_counter()
-                print(f"Customer generation in {round(finish - start, 4)} second(s).")
-                self.check_route_exist()
+                #print(f"Customer generation in {round(finish - start, 4)} second(s).")
+                #self.check_route_exist()
                 simulation_performances["customer_generation"] = round(finish - start, 4)
                 start = time.perf_counter()
                 for driver_gen_info in drivers_to_generate:
@@ -1289,70 +1265,70 @@ class Simulator:
                         driver_gen_info[DriverIdentifiers.DST_POS.value]
                     )
                 finish = time.perf_counter()
-                print(f"Driver generation in {round(finish - start, 4)} second(s).")
-                self.check_route_exist()
+                #print(f"Driver generation in {round(finish - start, 4)} second(s).")
+                #self.check_route_exist()
                 simulation_performances["driver_generation"] = round(finish - start, 4)
                 start = time.perf_counter()
                 self.__check_drivers_list(timestamp)
                 finish = time.perf_counter()
-                print(f"Checked drivers list in {round(finish - start, 4)} second(s).")
-                self.check_route_exist()
+                #print(f"Checked drivers list in {round(finish - start, 4)} second(s).")
+                #self.check_route_exist()
                 simulation_performances["check_driver_list"] = round(finish - start, 4)
                 self.__check_customers_list()
                 finish = time.perf_counter()
-                print(f"Checked customers list in {round(finish - start, 4)} second(s).")
-                self.check_route_exist()
+                #print(f"Checked customers list in {round(finish - start, 4)} second(s).")
+                #self.check_route_exist()
                 simulation_performances["check_customer_list"] = round(finish - start, 4)
                 if utils.random_choice(0.8):
                     start = time.perf_counter()
                     self.__generate_customer_requests(timestamp)
                     finish = time.perf_counter()
-                    print(f"Generated customer requests in {round(finish - start, 4)} second(s).")
-                    self.check_route_exist()
+                    #print(f"Generated customer requests in {round(finish - start, 4)} second(s).")
+                    #self.check_route_exist()
                     simulation_performances["generated_customer_requests"] = round(finish - start, 4)
                 else:
                     simulation_performances["generated_customer_requests"] = 0.0
-                    self.check_route_exist()
+                    #self.check_route_exist()
                 start = time.perf_counter()
                 self.__process_rides(timestamp)
                 finish = time.perf_counter()
-                print(f"Processed rides in {round(finish - start, 4)} second(s).")
-                self.check_route_exist()
+                #print(f"Processed rides in {round(finish - start, 4)} second(s).")
+                #self.check_route_exist()
                 simulation_performances["processed_rides"] = round(finish - start, 4)
                 start = time.perf_counter()
                 self.__manage_pending_request(timestamp)
                 finish = time.perf_counter()
-                print(f"Managed pending requests in {round(finish - start, 4)} second(s).")
-                self.check_route_exist()
+                #print(f"Managed pending requests in {round(finish - start, 4)} second(s).")
+                #self.check_route_exist()
                 simulation_performances["managed_pending_requests"] = round(finish - start, 4)
                 if timestamp > 0 and timestamp % 20.0 == 0:
                     start = time.perf_counter()
                     self.__update_surge_multiplier(timestamp)
                     finish = time.perf_counter()
-                    print(f"Updated surge multipliers in {round(finish - start, 4)} second(s).")
-                    self.check_route_exist()
+                    #print(f"Updated surge multipliers in {round(finish - start, 4)} second(s).")
+                    #self.check_route_exist()
                     simulation_performances["updated_surge_multipliers"] = round(finish - start, 4)
                 else:
                     simulation_performances["updated_surge_multipliers"] = 0.0
                 start = time.perf_counter()
                 self.__update_drivers(timestamp)
                 finish = time.perf_counter()
-                print(f"Updated drivers in {round(finish - start, 4)} second(s).")
-                self.check_route_exist()
+                #print(f"Updated drivers in {round(finish - start, 4)} second(s).")
+                #self.check_route_exist()
                 simulation_performances["updated_drivers"] = round(finish - start, 4)
                 start = time.perf_counter()
                 self.__update_rides_state(timestamp)
                 finish = time.perf_counter()
-                print(f"Updated rides state in {round(finish - start, 4)} second(s).")
-                self.check_route_exist()
+                #print(f"Updated rides state in {round(finish - start, 4)} second(s).")
+                #self.check_route_exist()
                 simulation_performances["updated_rides_state"] = round(finish - start, 4)
                 start = time.perf_counter()
                 if timestamp > 0 and (timestamp % self.__simulator_setup[ConfigEnum.CHECKPOINTS.value][ConfigEnum.TIME_MOVE_DRIVER.value]) == 0.0:
                     start = time.perf_counter()
                     self.__update_driver_movements(timestamp)
                     finish = time.perf_counter()
-                    print(f"Updated drivers movements in {round(finish - start, 4)} second(s).")
-                    self.check_route_exist()
+                    #print(f"Updated drivers movements in {round(finish - start, 4)} second(s).")
+                    #self.check_route_exist()
                     simulation_performances["updated_drivers_movements"] = round(finish - start, 4)
                 else:
                     simulation_performances["updated_drivers_movements"] = 0.0
@@ -1365,6 +1341,10 @@ class Simulator:
                     stop = True
                     print("STOP")
                     self.export_statistics()
+                self.__save_tazs_info_agents(
+                    timestamp,
+                    1
+                )
                 simulation_performances["saved_statistics"] = round(finish - start, 4)
             except Exception as e:
                 print(self.__drivers_by_state)
@@ -1374,11 +1354,11 @@ class Simulator:
                 self.export_statistics()
                 raise Exception("A Fatal error occurred in Simulator.")
             finish_iteration = time.perf_counter()
-            print(f"Completed iteration in {round(finish_iteration-start_iteration, 4)} seconds.")
+            #print(f"Completed iteration in {round(finish_iteration-start_iteration, 4)} seconds.")
             simulation_performances["completed_iteration"] = round(finish_iteration - start_iteration, 4)
             self.__printer.save_simulator_performances(timestamp, simulation_performances)
         finish_simulation = time.perf_counter()
-        print(f"Simulation ended in {round(finish_simulation - start_simulation, 4)} seconds.")
+        #print(f"Simulation ended in {round(finish_simulation - start_simulation, 4)} seconds.")
         traci.close()
         sys.stdout.flush()
 
