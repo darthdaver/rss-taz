@@ -446,11 +446,20 @@ class Provider:
             driver_position = traci.vehicle.getPosition(driver_id)
             customer_coordinates = traci.simulation.convertGeo(customer_position[0],customer_position[1])
             driver_coordinates = traci.simulation.convertGeo(driver_position[0],driver_position[1])
-            distance = haversine(
-                (driver_coordinates[1],driver_coordinates[0]),
-                (customer_coordinates[1],customer_coordinates[0]),
-                unit=Unit.METERS
-            )
+            try:
+                distance = haversine(
+                    (driver_coordinates[1],driver_coordinates[0]),
+                    (customer_coordinates[1],customer_coordinates[0]),
+                    unit=Unit.METERS
+                )
+            except:
+                distance = traci.simulation.getDistance2D(
+                    driver_coordinates[0],
+                    driver_coordinates[1],
+                    customer_coordinates[0],
+                    customer_coordinates[1],
+                    isDriving=True
+                )
             if distance < self.__request[ProviderIdentifier.MAX_DRIVER_DISTANCE.value]:
                 ride_info = self.add_candidate_to_ride(ride_info[RideIdentifier.RIDE_ID.value], {
                     RequestIdentifier.CANDIDATE_ID.value: driver_id,

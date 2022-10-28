@@ -1,4 +1,3 @@
-import os
 import xmltodict
 from src.enum.setup.Paths import Paths
 from src.enum.setup.Dataset import Dataset
@@ -11,19 +10,17 @@ from src.enum.identifiers.Net import Net as NetIdentifier
 from src.enum.identifiers.Provider import Provider
 from src.types.Net import TazInfo
 from src.enum.identifiers.Human import Human
-from src.enum.state.RideState import RideState
 from src.enum.identifiers.Ride import Ride
 from src.enum.identifiers.Config import Config
-from src.types.Net import EdgeInfo
 from src.enum.types.PersonalityType import PersonalityType
 from src.utils import utils
 from typing import Type
 import sumolib
 
 class NetParser():
-    def __init__(self, net_datasets_types: list[[Type[Dataset],Type[NetType]]], city: City):
+    def __init__(self, net_path: str, net_datasets_types: list[[Type[Dataset],Type[NetType]]], city: Type[City]):
         self.__net_datasets_types = net_datasets_types
-        self.__sumo_net = sumolib.net.readNet(FileSetup.NET_SUMO.value, withInternal=True)
+        self.__sumo_net = sumolib.net.readNet(net_path, withInternal=True)
         self.__customer_setup = utils.read_file_from_absolute_path_to_file(FileSetup.CUSTOMER.value, FileFormat.JSON)
         self.__driver_setup = utils.read_file_from_absolute_path_to_file(FileSetup.DRIVER.value, FileFormat.JSON)
         self.__city = city
@@ -192,14 +189,3 @@ class NetParser():
                     }
         self.__net[net_type][NetIdentifier.TAZ.value] = taz_dict
         self.__net[net_type][NetIdentifier.EDGES.value] = edge_dict
-
-net_datasets_types = [
-    (Dataset.SFCTA, NetType.MOBILITY_NET),
-    (Dataset.STANFORD, NetType.BOUNDARY_NET),
-    (Dataset.UBER, NetType.ANALYTICS_NET)
-]
-
-net_parser: Type[NetParser] = NetParser(net_datasets_types, City.SAN_FRANCISCO)
-net_parser.collect_edges()
-net_parser.parse_taz_edges()
-net_parser.export_net()

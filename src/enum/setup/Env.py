@@ -1,4 +1,8 @@
 from enum import Enum
 
 class Env(str, Enum):
+    DATASET_PICKUPS = "DATASET_PICKUPS"
+    DATASET_TRAVEL_TIMES = "DATASET_TRAVEL_TIMES"
+    NET_SUMO = "NET_SUMO"
     TRACI_PORT = "TRACI_PORT"
+    CITY ="CITY"

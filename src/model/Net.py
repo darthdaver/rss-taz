@@ -110,12 +110,13 @@ class Net:
             self,
             taz_id: str,
             src_edge_id: str,
+            src_pos: float,
             net_type: NetType = NetType.BOUNDARY_NET
     ):
         route: list[Type[SumoEdge]]
         cost: str
         exclude_edges_ids: list[str] = [src_edge_id]
-        for i in range(5):
+        for i in range(10):
             dst_random_edge_id: str = self.get_random_edge_id_from_taz_id(taz_id, exclude_edges_ids, net_type)
             if dst_random_edge_id is None:
                 return (None, None)
@@ -129,7 +130,13 @@ class Net:
             dst_random_edge = self.__sumo_net.getEdge(dst_random_edge_id)
             if dst_random_edge.isSpecial():
                 dst_random_edge = list(dst_random_edge.getOutgoing().keys())[0]
-            route, cost = self.__sumo_net.getOptimalPath(src_edge, dst_random_edge)
+            dst_random_pos = round(dst_random_edge.getLength()/2, 2)
+            route, cost = self.__sumo_net.getOptimalPath(
+                src_edge,
+                dst_random_edge,
+                fromPos=src_pos,
+                toPos=dst_random_pos
+            )
             if not route is None:
                 return (route, cost)
             exclude_edges_ids.append(dst_random_edge_id)
@@ -140,10 +147,15 @@ class Net:
             timestamp: float,
             taz_id: str,
             src_edge_id: str,
-            src_pos: Optional[float] = None,
+            src_pos: float,
             net_type: NetType = NetType.BOUNDARY_NET
     ):
-        route, cost = self.generate_random_sumolib_route_in_taz(taz_id, src_edge_id, net_type)
+        route, cost = self.generate_random_sumolib_route_in_taz(
+            taz_id,
+            src_edge_id,
+            src_pos,
+            net_type
+        )   #########
         if route is not None:
             src_edge = self.__sumo_net.getEdge(src_edge_id)
             if src_edge.isSpecial():
@@ -194,7 +206,9 @@ class Net:
     def generate_sumolib_route_from_src_dst_edge_ids(
             self,
             src_edge_id: str,
-            dst_edge_id: str
+            dst_edge_id: str,
+            from_pos: float,
+            to_pos: float
     ) -> Union[list[SumoEdge], None]:
         src_edge = self.__sumo_net.getEdge(src_edge_id)
         if src_edge.isSpecial():
@@ -206,7 +220,12 @@ class Net:
         dst_analytics_taz_id = self.get_taz_id_from_edge_id(dst_edge_id, NetType.ANALYTICS_NET)
         if not self.check_connection_travel_time(src_analytics_taz_id, dst_analytics_taz_id):
             return None
-        route, cost = self.__sumo_net.getOptimalPath(src_edge, dst_edge)
+        route, cost = self.__sumo_net.getOptimalPath(
+            src_edge,
+            dst_edge,
+            fromPos=from_pos,
+            toPos=to_pos
+        )
         if route is not None:
             route_id = f"route_from_{src_edge_id}_to_{dst_edge_id}"
             route_edge_id_list = self.convert_route_to_edge_id_list(route)
@@ -226,7 +245,12 @@ class Net:
             src_pos: float,
             dst_pos: float
     ) -> Union[Type[Route], None]:
-        sumolib_route = self.generate_sumolib_route_from_src_dst_edge_ids(src_edge_id, dst_edge_id)
+        sumolib_route = self.generate_sumolib_route_from_src_dst_edge_ids(
+            src_edge_id,
+            dst_edge_id,
+            src_pos,
+            dst_pos
+        )
         if sumolib_route is not None:
             route_edge_id_list = self.convert_route_to_edge_id_list(sumolib_route)
             sim_route = self.generate_sim_route_from_edge_id_list(timestamp, route_edge_id_list, src_pos, dst_pos)

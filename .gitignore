@@ -12,6 +12,7 @@ output*
 **/repos
 data_old
 data
+data_test
 logfile.txt
 traci_logfile.txt
 

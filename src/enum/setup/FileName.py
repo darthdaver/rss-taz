@@ -1,5 +1,9 @@
 from enum import Enum
 from src.enum.setup.Scenario import Scenario
+from src.settings.Settings import Settings
+
+env_settings = Settings()
+NET_SUMO = env_settings.NET_SUMO
 
 class FileName(str, Enum):
     PICKUPS_DROPOFFS = 'pickups_dropoffs'
@@ -30,7 +34,7 @@ class FileName(str, Enum):
     DRIVER = 'driver'
     SIMULATOR = 'simulator'
     PROVIDER = 'provider'
-    NET_SUMO = 'san-francisco.net'
+    NET_SUMO = NET_SUMO
     # SCENARIOS
     SCENARIO = Scenario.NORMAL.value
     ENV = ".env"
@@ -44,4 +48,5 @@ class FileName(str, Enum):
     GLOBAL_INDICATORS = "global_indicators"
     SPECIFIC_INDICATORS = "specific_indicators"
     SIMULATOR_PERFORMANCES = "simulator_performances"
+
 

@@ -2,7 +2,7 @@
     "timer_remove_idle_driver": 500,
     "city": "sf",
     "checkpoints": {
-        "simulation_duration": 5000,
+        "simulation_duration": 2000,
         "time_customer_generation": 80,
         "time_driver_generation": 80,
         "time_move_driver": 300,

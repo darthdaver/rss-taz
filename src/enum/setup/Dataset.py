@@ -4,3 +4,4 @@ class Dataset(str, Enum):
     SFCTA = "sfcta"
     STANFORD = "stanford"
     UBER = "uber"
+    TEST = "test"

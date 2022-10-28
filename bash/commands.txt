@@ -1,8 +1,17 @@
+- Add city name in City enum
+- Add dataset name in Dataset enum
+
+
 - chmod a+x net_processing.sh
 - ./netprocessing.sh
 - python3 -m src.setup.NetParser
 - python3 -m src.setup.MobilityGenerator
 - ./sumo_tools/duarouter -n ./net_config/san-francisco.net.xml -r ./net_config/sf_sfcta_mobility.xml --ignore-errors=True --repair=True -o ./net_config/sf_sfcta_clean_mobility.rou.xml
 
+TEST:
+- ./sumo_tools/duarouter -n ./net_config/city.net.xml -r ./net_config/city_test_mobility.xml --ignore-errors=True --repair=True -o ./net_config/city_test_clean_mobility.rou.xml
+
 NOTES:
 - edgesInDistricts.py --> modified line 199 (reader = DistrictEdgeComputer(sumolib.net.readNet(nets[0]) --> reader = DistrictEdgeComputer(sumolib.net.readNet(nets[0], withInternal=True))
+- se si cambia la città, in src.enum.setup.Paths.py va cambiata la variabile CITY di conseguenza
+- cambiare anche mobilità in net_config e cambiare file sumo.sumocfg
