@@ -6,5 +6,6 @@ class Settings(BaseSettings):
     DATASET_TRAVEL_TIMES: str
     NET_SUMO: str
     CITY: str
+    SCENARIO: str
     class Config:
         env_file = '.env'

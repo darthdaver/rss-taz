@@ -166,7 +166,6 @@ class Net:
             route_edge_id_list = self.convert_route_to_edge_id_list(route)
             src_pos: float = round(src_edge.getLength()/2, 2) if src_pos is None else src_pos #round(random.uniform(0.01, src_edge.getLength()), 2) if src_pos is None else src_pos
             dst_pos: float = round(dst_edge.getLength()/2, 2)
-            print(f"dst pos: {dst_pos}")
             sim_route = self.generate_sim_route_from_edge_id_list(
                 timestamp,
                 route_edge_id_list,

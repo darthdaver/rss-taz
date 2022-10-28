@@ -9,6 +9,7 @@ if __name__ == "__main__":
     env_variables[Env.DATASET_PICKUPS.value] = str(input("Dataset pickups: "))
     env_variables[Env.DATASET_TRAVEL_TIMES.value] = str(input("Dataset travel_times: "))
     env_variables[Env.NET_SUMO.value] = str(input("Sumo net name: "))
+    env_variables[Env.SCENARIO.value] = str(input("Scenario type: "))
     with open('.env', 'w') as env_file:
         for k,v in env_variables.items():
             env_file.write(f"{k}={v}\n")

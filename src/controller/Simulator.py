@@ -1,6 +1,4 @@
-import math
 import time
-import random
 import multiprocessing
 from src.enum.setup.FileSetup import FileSetup
 from src.enum.state.CustomerState import CustomerState
@@ -11,11 +9,9 @@ from src.enum.types.PersonalityType import PersonalityType
 from src.enum.types.EventType import EventType
 from src.enum.types.HumanType import HumanType
 from src.enum.types.RouteType import RouteType
-from src.enum.identifiers.Net import Net as NetIdentifiers      ###
 from src.enum.types.NetType import NetType
 from src.enum.identifiers.Provider import Provider as ProviderIdentifier        ###
 from src.enum.identifiers.Route import Route as RouteIdentifier
-from src.enum.identifiers.Event import Event as EventIdentifier
 from src.enum.identifiers.EnergyIndexes import EnergyIndexes as EnergyIndexesIdentifier     ###
 from src.enum.identifiers.Config import Config as ConfigEnum        ###
 from src.enum.identifiers.Human import Human as HumanEnum       ###
@@ -23,7 +19,7 @@ from src.enum.identifiers.Customer import Customer as CustomerIdentifier        
 from src.enum.identifiers.Ride import Ride as RideIdentifier        ###
 from src.enum.identifiers.Request import Request as RequestIdentifier        ###
 from src.enum.identifiers.Driver import Driver as DriverIdentifiers     ###
-from src.enum.identifiers.Simulation import Simulation as SimulationIdentifier
+from src.enum.identifiers.DriverRemotion import DriverRemotion as DriverRemotionIdentifier     ###
 from src.types.Ride import RideInfo
 from src.types.Driver import DriverInfo
 from src.types.Customer import CustomerInfo
@@ -36,21 +32,16 @@ from src.model.Ride import Ride
 from src.model.Route import Route
 from src.model.Customer import Customer
 from src.model.Driver import Driver
-from src.enum.api.Api import Api
 from src.enum.setup.City import City
 from src.model.EnergyIndexes import EnergyIndexes
-from src.model.GlobalIndicators import GlobalIndicators
-from src.model.SpecificIndicators import SpecificIndicators
+from src.stats.GlobalIndicators import GlobalIndicators
+from src.stats.SpecificIndicators import SpecificIndicators
 from src.model.Printer import Printer
 from typing import Type, Dict, Union
 import traci
-from traci import tc
 import sumolib
 import sys
-from functools import partial
-from src.task import tasks
-from itertools import repeat
-import requests
+
 
 class Simulator:
     def __init__(
@@ -679,7 +670,8 @@ class Simulator:
 
     def __remove_driver(
             self,
-            driver_id: str
+            driver_id: str,
+            reason: Type[DriverRemotionIdentifier]
     ):
         #print(f"Remove {driver_id}")
         driver = self.__drivers[driver_id]
@@ -814,7 +806,7 @@ class Simulator:
             route: Type[Route],
             stop_pos: float = -1,
             flags: int = 0,
-            duration: int = 3
+            duration: int = 1
     ):
         driver = self.__drivers[driver_id]
         dst_edge_id = route.get_destination_edge_id()
@@ -831,6 +823,16 @@ class Simulator:
             traci.vehicle.setRouteID(driver_id, route_id)
             traci.vehicle.setStop(driver_id, dst_edge_id, stop_pos, duration=duration, flags=flags)
         except:
+            driver_info = driver.get_info()
+            driver_route = driver_info[DriverIdentifiers.ROUTE.value]
+            route_index = traci.vehicle.getRouteIndex()
+            driver_road = traci.vehicle.getRoadID(driver_id)
+            driver_edge = traci.vehicle.getRoute(driver_id)[route_index]
+            print(driver_id)
+            print(driver_route)
+            print(driver_road)
+            print(driver_edge)
+            print(route)
             raise Exception(f"Simulation.__set_driver_route - Impossible to set driver route for {driver_id}")
         driver.set_route_destination_position(stop_pos)
 
@@ -872,12 +874,18 @@ class Simulator:
                 customer_id,
                 0
             )
-            dst_pos = route.get_destination_position()
+            # Take into account the limitation of traci in defining the destination position of the customer
+            # refinement of the route destination position accordingly
+            # update driver_info with the new arrival position
+            arrival_dst_pos = traci.person.getStage(customer_id).arrivalPos
+            route.set_destination_position(arrival_dst_pos)
+            driver_info = driver.get_info()
+            print(route.get_destination_position())
             try:
                 self.__set_driver_route(
                     driver_id,
                     route,
-                    stop_pos=dst_pos
+                    stop_pos=arrival_dst_pos
                 )
             except:
                 raise Exception(f"Simulator.__start_sumo_route - impossible to start route for {driver_id}")
@@ -1288,9 +1296,9 @@ class Simulator:
                     finish = time.perf_counter()
                     print(f"Generated customer requests in {round(finish - start, 4)} second(s).")
                     #self.check_route_consistency()
-                    simulation_performances["generated_customer_requests"] = round(finish - start, 4)
+                    simulation_performances["customer_requests"] = round(finish - start, 4)
                 else:
-                    simulation_performances["generated_customer_requests"] = 0.0
+                    simulation_performances["customer_requests"] = 0.0
                     self.check_route_exist()
                 start = time.perf_counter()
                 self.__process_rides(timestamp)
@@ -1340,7 +1348,7 @@ class Simulator:
                     self.__perform_scenario_event(timestamp, event_type, params)
                 if timestamp > 0 and timestamp % 1000.0 == 0:
                     self.export_statistics()
-                if timestamp > 0 and timestamp % 5000.0 == 0:
+                if timestamp > 0 and timestamp % self.__simulator_setup[ConfigEnum.CHECKPOINTS.value][ConfigEnum.SIMULATION_DURATION.value] == 0:
                     stop = True
                     print("STOP")
                     self.export_statistics()
@@ -1348,7 +1356,6 @@ class Simulator:
                     timestamp,
                     1
                 )
-                simulation_performances["saved_statistics"] = round(finish - start, 4)
             except Exception as e:
                 print(self.__drivers_by_state)
                 print(traci.vehicle.getIDList())

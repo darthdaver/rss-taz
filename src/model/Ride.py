@@ -62,10 +62,10 @@ class Ride:
             RideIdentifiers.RIDE_ID.value: self.__id,
             RideIdentifiers.CUSTOMER_ID.value: self.__customer_id,
             RideIdentifiers.DRIVER_ID.value: self.__driver_id,
-            RideIdentifiers.SRC_EDGE_ID: self.__src_edge_id,
-            RideIdentifiers.DST_EDGE_ID: self.__dst_edge_id,
-            RideIdentifiers.SRC_POS: self.__src_pos,
-            RideIdentifiers.DST_POS: self.__dst_pos,
+            RideIdentifiers.SRC_EDGE_ID.value: self.__src_edge_id,
+            RideIdentifiers.DST_EDGE_ID.value: self.__dst_edge_id,
+            RideIdentifiers.SRC_POS.value: self.__src_pos,
+            RideIdentifiers.DST_POS.value: self.__dst_pos,
             RideIdentifiers.REQUEST.value: {
                 **self.__request
             },

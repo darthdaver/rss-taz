@@ -48,5 +48,6 @@ class FileName(str, Enum):
     GLOBAL_INDICATORS = "global_indicators"
     SPECIFIC_INDICATORS = "specific_indicators"
     SIMULATOR_PERFORMANCES = "simulator_performances"
+    DRIVERS_STATS = "drivers_stats"
 
 
