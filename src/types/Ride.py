@@ -1,4 +1,6 @@
 from typing import Type, TypedDict, Union, Optional
+
+from src.enum.state.CandidateState import CandidateState
 from src.types.Route import RouteInfo
 from src.model.Route import Route
 from src.enum.state.RideRequestState import RideRequestState
@@ -6,6 +8,7 @@ from src.enum.state.RideRequestState import RideRequestState
 
 class Candidate(TypedDict):
     id = str
+    state = Type[CandidateState]
     response_count_down = int
     meeting_route = Type[Route]
     send_request_back_timer = int
@@ -17,7 +20,8 @@ class Candidate(TypedDict):
 class RequestInfo(TypedDict):
     state = Type[RideRequestState]
     drivers_candidate = list[Candidate]
-    rejections = int
+    requests_sent = list[(float,str)]
+    rejections = list[(float,str)]
     current_candidate = str
 
 class RideRoutes(TypedDict):

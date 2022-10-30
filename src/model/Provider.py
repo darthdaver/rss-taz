@@ -1,20 +1,17 @@
 import random
 from typing import Type, Dict, Union
+
+from src.enum.state.CandidateState import CandidateState
 from src.model.Ride import Ride
 from src.model.Route import Route
 from src.enum.types.RouteType import RouteType
 from src.types.Route import RouteInfo
 from src.types.Customer import CustomerInfo
-from src.types.Driver import DriverInfo
 import multiprocessing_on_dill as multiprocessing
 from src.enum.identifiers.Human import Human as HumanIdentifier
 from src.enum.identifiers.Driver import Driver as DriverIdentifier
 from src.enum.identifiers.Ride import Ride as RideIdentifier
 from src.enum.identifiers.Provider import Provider as ProviderIdentifier
-from src.enum.identifiers.Route import Route as RouteIdentifier
-from src.enum.identifiers.Request import Request as RequestIdentifier
-from src.enum.setup.FileSetup import FileSetup
-from src.model.Map import Map
 from src.enum.state.DriverState import DriverState
 from src.enum.state.CustomerState import CustomerState
 from src.enum.state.RideState import RideState
@@ -25,13 +22,7 @@ from src.types.Config import ProviderSetup, FareSetup, RequestSetup
 from src.types.Ride import Candidate, RideInfo
 from src.types.Driver import DriverInfo
 from sumolib.net import Net as SumoNet
-import sumolib
-import time
 from src.enum.identifiers.Request import Request as RequestIdentifier
-from joblib import wrap_non_picklable_objects
-from src.task import tasks
-from src.enum.identifiers.Api import Api as ApiIdentifier
-from src.enum.api.Api import Api
 import traci
 from haversine import haversine, Unit
 
@@ -219,6 +210,7 @@ class Provider:
 
     def manage_pending_request(
             self,
+            timestamp: float,
             ride_info: Type[RideInfo],
             drivers_info: Dict[str, Type[DriverInfo]]
     ):
@@ -228,7 +220,10 @@ class Provider:
             free_drivers_ids = drivers_info.keys()
             candidate = self.__select_driver_candidate(ride_info, free_drivers_ids)
             if candidate:
-                ride_info = ride.set_candidate(candidate)
+                ride_info = ride.set_candidate(
+                    timestamp,
+                    candidate
+                )
                 ride_info = ride.set_request_state(RideRequestState.SENT)
                 return (ride_info, RideRequestState.SENT, candidate[RequestIdentifier.CANDIDATE_ID.value])
             else:
@@ -317,13 +312,17 @@ class Provider:
 
     def ride_request_rejected(
             self,
+            timestamp: float,
             ride_id: str,
             driver_id: str
     ):
         ride = self.__rides[ride_id]
         ride_info = ride.get_info()
         assert ride_info[RideIdentifier.RIDE_STATE.value] == RideState.PENDING, f"Unexpected ride state {ride_info[RideIdentifier.RIDE_STATE.value]} for {ride_id}"
-        return ride.request_rejected(driver_id)
+        return ride.request_rejected(
+            timestamp,
+            driver_id
+        )
 
     def set_ride_request_state(
             self,
@@ -465,7 +464,8 @@ class Provider:
                     RequestIdentifier.CANDIDATE_ID.value: driver_id,
                     RequestIdentifier.COST.value: distance,
                     RequestIdentifier.RESPONSE_COUNT_DOWN.value: 15,
-                    RequestIdentifier.SEND_REQUEST_BACK_TIMER.value: utils.random_int_from_range(0, 11)
+                    RequestIdentifier.SEND_REQUEST_BACK_TIMER.value: utils.random_int_from_range(0, 11),
+                    RequestIdentifier.CANDIDATE_STATE.value: CandidateState.QUEUE.value
                 })
         if len(ride_info[RideIdentifier.REQUEST.value][RequestIdentifier.DRIVERS_CANDIDATE.value]) == 0:
             # print(f"Provider.__nearby_drivers - {ride_info[RideIdentifier.CUSTOMER_ID.value]} has 0 candidates.")
@@ -484,5 +484,6 @@ class Provider:
         drivers_candidates = ride_info[RideIdentifier.REQUEST.value][RequestIdentifier.DRIVERS_CANDIDATE.value]
         for candidate in drivers_candidates:
             if candidate and candidate[RequestIdentifier.CANDIDATE_ID.value] in free_drivers_ids:
+                candidate[RequestIdentifier.CANDIDATE_STATE.value] = CandidateState.PROCESSED.value
                 return candidate
         return None

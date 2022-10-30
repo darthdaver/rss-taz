@@ -1,5 +1,7 @@
 import math
 from typing import Type
+
+from src.enum.state.CandidateState import CandidateState
 from src.model.Route import Route
 from src.enum.identifiers.Route import Route as RouteIdentifiers
 from src.enum.identifiers.Ride import Ride as RideIdentifiers
@@ -32,6 +34,7 @@ class Ride:
         self.__request = {
             RequestIdentifiers.REQUEST_STATE.value: RideRequestState.UNPROCESSED,
             RequestIdentifiers.DRIVERS_CANDIDATE.value: [],
+            RequestIdentifiers.REQUESTS_SENT.value: [],
             RequestIdentifiers.REJECTIONS.value: [],
             RequestIdentifiers.CURRENT_CANDIDATE.value: None
         }
@@ -41,7 +44,10 @@ class Ride:
         }
         self.__stats = stats
 
-    def add_driver_candidate(self, driver_candidate: Candidate) -> RideInfo:
+    def add_driver_candidate(
+            self,
+            driver_candidate: Candidate
+    ) -> RideInfo:
         self.__request[RequestIdentifiers.DRIVERS_CANDIDATE.value].append(driver_candidate)
         return self.get_info()
 
@@ -80,7 +86,11 @@ class Ride:
         meeting_route_info = self.__routes[RouteIdentifiers.MEETING_ROUTE.value].get_info()
         return meeting_route_info
 
-    def refine_route(self, route_type: RouteIdentifiers, route: Type[Route]) -> RideInfo:
+    def refine_route(
+            self,
+            route_type: RouteIdentifiers,
+            route: Type[Route]
+    ) -> RideInfo:
         self.__routes[route_type] = route
         return self.get_info()
 
@@ -89,9 +99,14 @@ class Ride:
         self.__state = RideState.CANCELED
         return self.get_info()
 
-    def request_rejected(self, driver_id: str, idle_driver: bool = True) -> RideInfo:
+    def request_rejected(
+            self,
+            timestamp: float,
+            driver_id: str,
+            idle_driver: bool = True
+    ) -> RideInfo:
         if idle_driver:
-            self.__request[RequestIdentifiers.REJECTIONS.value].append(driver_id)
+            self.__request[RequestIdentifiers.REJECTIONS.value].append((timestamp,driver_id))
         self.__request[RequestIdentifiers.REQUEST_STATE] = RideRequestState.REJECTED
         return self.get_info()
 
@@ -101,21 +116,42 @@ class Ride:
             RouteIdentifiers.DESTINATION_ROUTE.value: None if self.__routes[RouteIdentifiers.DESTINATION_ROUTE.value] is None else self.__routes[RouteIdentifiers.DESTINATION_ROUTE.value].to_dict()
         }
 
-    def set_candidate(self, candidate: Candidate) -> RideInfo:
+    def set_candidate(
+            self,
+            timestamp,
+            candidate: Candidate
+    ) -> RideInfo:
+        candidate_id = candidate[RequestIdentifiers.CANDIDATE_ID.value]
         self.__request[RequestIdentifiers.CURRENT_CANDIDATE.value] = candidate
         assert candidate in self.__request[RequestIdentifiers.DRIVERS_CANDIDATE.value], "Ride.set_candidate - candidate is not included in drivers candidates"
-        self.__request[RequestIdentifiers.DRIVERS_CANDIDATE.value] = list(filter(lambda d: not d[RequestIdentifiers.CANDIDATE_ID.value] == candidate[RequestIdentifiers.CANDIDATE_ID.value], self.__request[RequestIdentifiers.DRIVERS_CANDIDATE.value]))
+        self.__request[RequestIdentifiers.DRIVERS_CANDIDATE.value] = list(
+            filter(
+                lambda d: not d[RequestIdentifiers.CANDIDATE_ID.value] == candidate_id,
+                self.__request[RequestIdentifiers.DRIVERS_CANDIDATE.value]
+            )
+        )
+        self.__request[RequestIdentifiers.DRIVERS_CANDIDATE.value].append(candidate)
+        self.__request[RequestIdentifiers.REQUESTS_SENT.value].append((timestamp, candidate_id))
         return self.get_info()
 
-    def set_driver(self, driver_id: str) -> RideInfo:
+    def set_driver(
+            self,
+            driver_id: str
+    ) -> RideInfo:
         self.__driver_id = driver_id
         return self.get_info()
 
-    def set_request_state(self, state: Type[RideRequestState]) -> RideInfo:
+    def set_request_state(
+            self,
+            state: Type[RideRequestState]
+    ) -> RideInfo:
         self.__request[RequestIdentifiers.REQUEST_STATE.value] = state
         return self.get_info()
 
-    def set_state(self, state: Type[RideState]) -> RideInfo:
+    def set_state(
+            self,
+            state: Type[RideState]
+    ) -> RideInfo:
         self.__state = state
         return self.get_info()
 
@@ -123,13 +159,19 @@ class Ride:
         self.__request[RequestIdentifiers.DRIVERS_CANDIDATE.value] = sorted(self.__request[RequestIdentifiers.DRIVERS_CANDIDATE.value], key=lambda d: d[RequestIdentifiers.COST.value])
         return self.get_info()
 
-    def update_request_minimal(self, candidates_count: int):
+    def update_request_minimal(
+            self,
+            candidates_count: int
+    ):
         self.__request[RequestIdentifiers.CANDIDATES_COUNT.value] = candidates_count
 
     def update_cancel(self):
         pass
 
-    def update_end(self, stats: Type[RideStats]) -> RideInfo:
+    def update_end(
+            self,
+            stats: Type[RideStats]
+    ) -> RideInfo:
         self.__state = RideState.END
         self.__set_stats(stats)
         return self.get_info()
@@ -144,12 +186,20 @@ class Ride:
         self.__set_stats(stats)
         return self.get_info()
 
-    def update_pending(self, timestamp: float) -> RideInfo:
+    def update_pending(
+            self,
+            timestamp: float
+    ) -> RideInfo:
         self.__state = RideState.PENDING
         self.__stats[RideIdentifiers.STAT_TIMESTAMP_REQUEST.value] = timestamp
         return self.get_info()
 
-    def update_accepted(self, driver_id: str, meeting_route: Type[Route], stats: Type[RideStats])-> RideInfo:
+    def update_accepted(
+            self,
+            driver_id: str,
+            meeting_route: Type[Route],
+            stats: Type[RideStats]
+    )-> RideInfo:
         self.__driver_id = driver_id
         self.__set_route(RouteIdentifiers.MEETING_ROUTE, meeting_route)
         self.__set_stats(stats)
@@ -160,14 +210,21 @@ class Ride:
         self.__state = RideState.PICKUP
         return self.get_info()
 
-    def __set_route(self, route_type: Type[RouteIdentifiers], route: Type[Route]) -> RideInfo:
+    def __set_route(
+            self,
+            route_type: Type[RouteIdentifiers],
+            route: Type[Route]
+    ) -> RideInfo:
         if route_type == RouteIdentifiers.MEETING_ROUTE:
             self.__routes[RouteIdentifiers.MEETING_ROUTE.value] = route
         if route_type == RouteIdentifiers.DESTINATION_ROUTE:
             self.__routes[RouteIdentifiers.DESTINATION_ROUTE.value] = route
         return self.get_info()
 
-    def __set_stats(self, stats: Type[RideStats]) -> RideInfo:
+    def __set_stats(
+            self,
+            stats: Type[RideStats]
+    ) -> RideInfo:
         self.__stats = {
             **self.__stats,
             **stats

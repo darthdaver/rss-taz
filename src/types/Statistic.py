@@ -1,4 +1,6 @@
 from typing import TypedDict, Dict
+
+from src.enum.state.RideState import RideState
 from src.types.Net import TazInfo
 from src.types.Ride import RideStats
 

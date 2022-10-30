@@ -14,7 +14,7 @@ from src.enum.setup.City import City
 
 env_settings = Settings()
 CITY = City(env_settings.CITY)
-SCENARIO = Scenario(env_settings)
+SCENARIO = Scenario(env_settings.SCENARIO)
 
 class DriversStatistics:
     def __init__(self):

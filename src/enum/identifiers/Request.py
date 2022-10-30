@@ -14,3 +14,5 @@ class Request(str, Enum):
     EXPECTED_DURATION = "expected_duration"
     SEND_REQUEST_BACK_TIMER = "send_request_back_timer"
     COST = "cost"
+    CANDIDATE_STATE = "state"
+    REQUESTS_SENT = "requests_sent"

@@ -7,6 +7,6 @@
         "time_driver_generation": 80,
         "time_move_driver": 300,
         "time_dispatch_rides": 140,
-        "time_update_surge": 15
+        "time_update_surge_multiplier": 20
     }
 }

@@ -10,3 +10,4 @@ class Config(str, Enum):
     CHECKPOINTS = "checkpoints"
     TIME_MOVE_DRIVER = "time_move_driver"
     SIMULATION_DURATION = "simulation_duration"
+    TIME_UPDATE_SURGE_MULTIPLIER = "time_update_surge_multiplier"
