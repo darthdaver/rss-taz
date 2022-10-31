@@ -10,7 +10,11 @@ output*
 
 #data
 **/repos
-data/sf
+data
+!data/city/net/taz/boundary/*
+!data/city/net/taz/centroids/*
+
+
 logfile.txt
 traci_logfile.txt
 

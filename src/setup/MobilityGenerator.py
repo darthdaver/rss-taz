@@ -158,28 +158,29 @@ class MobilityGenerator():
                 return
             dst_edge = self.__sumo_net.getEdge(dst_edge_id)
             dst_edge_length = dst_edge.getLength()
-            dst_pos = round(dst_edge_length/2, 2) # round(random.uniform(0.01, dst_edge_length), 2)
+            dst_pos = dst_edge_length # round(random.uniform(0.01, dst_edge_length), 2)
             dst_taz_id = self.__net.get_taz_id_from_edge_id(dst_edge_id, NetType.ANALYTICS_NET)
             if src_pos > 1 and dst_pos > 1:
                 if self.__check_edge_allows_vehicle_type(dst_edge) and self.__net.check_connection_travel_time(src_taz_id, dst_taz_id):
-                    personality: Type[PersonalityType] = self.__assign_personality(personality_distribution)
-                    customer_id = f"customer_{self.__customer_counter}"
-                    self.__customer_counter += 1
-                    customer_attr = {
-                        MobilityXMLEnum.ID.value: customer_id,
-                        MobilityXMLEnum.DEPART.value: str(timestamp),
-                        MobilityXMLEnum.DEPART_POS.value: str(src_pos)
-                    }
-                    stop_attr = {
-                        MobilityXMLEnum.LANE.value: src_edge_lane_id,
-                        MobilityXMLEnum.DEPART_POS.value: str(src_pos),
-                        MobilityXMLEnum.DEPART_POS.value: str(dst_pos),
-                        MobilityXMLEnum.DURATION.value: str(1000)  # set to huge number by default. When the ride will start the stop will be removed
-                    }
-                    self.__add_customer_to_dict(timestamp, customer_id, src_edge_id, dst_edge_id, personality, src_pos, dst_pos)
-                    person_xml: Type[ET.Element] = ET.SubElement(self.__xml_root, MobilityXMLEnum.PERSON, attrib=customer_attr)
-                    ET.SubElement(person_xml, MobilityXMLEnum.STOP.value, attrib=stop_attr)
-                    return
+                    if self.__net.check_route(src_edge, dst_edge, src_pos, dst_pos):
+                        personality: Type[PersonalityType] = self.__assign_personality(personality_distribution)
+                        customer_id = f"customer_{self.__customer_counter}"
+                        self.__customer_counter += 1
+                        customer_attr = {
+                            MobilityXMLEnum.ID.value: customer_id,
+                            MobilityXMLEnum.DEPART.value: str(timestamp),
+                            MobilityXMLEnum.DEPART_POS.value: str(src_pos)
+                        }
+                        stop_attr = {
+                            MobilityXMLEnum.LANE.value: src_edge_lane_id,
+                            MobilityXMLEnum.DEPART_POS.value: str(src_pos),
+                            MobilityXMLEnum.DEPART_POS.value: str(dst_pos),
+                            MobilityXMLEnum.DURATION.value: str(1000)  # set to huge number by default. When the ride will start the stop will be removed
+                        }
+                        self.__add_customer_to_dict(timestamp, customer_id, src_edge_id, dst_edge_id, personality, src_pos, dst_pos)
+                        person_xml: Type[ET.Element] = ET.SubElement(self.__xml_root, MobilityXMLEnum.PERSON, attrib=customer_attr)
+                        ET.SubElement(person_xml, MobilityXMLEnum.STOP.value, attrib=stop_attr)
+                        return
         if attempts > 0:
             self.__generate_customer(timestamp, taz_id, net_type, attempts=(attempts - 1))
         else:

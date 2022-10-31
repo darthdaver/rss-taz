@@ -18,9 +18,10 @@ TRACI_PORT = env_settings.TRACI_PORT
 CITY = City(env_settings.CITY)
 
 if __name__ == "__main__":
-    if 'SUMO_HOME_BREW' in os.environ:
-        tools = os.path.join(os.environ['SUMO_HOME_BREW'], 'tools')
-        bin = os.path.join(os.environ['SUMO_HOME_BREW'], 'bin')
+    if 'SUMO_HOME' in os.environ:
+        print(os.environ['SUMO_HOME'])
+        tools = os.path.join(os.environ['SUMO_HOME'], 'tools')
+        bin = os.path.join(os.environ['SUMO_HOME'], 'bin')
         sys.path.append(tools)
         sys.path.append(bin)
     else:

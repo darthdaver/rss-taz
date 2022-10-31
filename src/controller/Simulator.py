@@ -110,6 +110,7 @@ class Simulator:
                 if not driver_id in current_drivers_list:
                     # print(f"Sumo forced {driver_id} remotion.")
                     driver_info = self.__drivers[driver_id].get_info()
+                    print(driver_info)
                     self.__remove_driver_by_state(
                         timestamp,
                         driver_id,
@@ -188,27 +189,36 @@ class Simulator:
             self,
             timestamp,
             driver_id,
-            dst_taz_id
-    ) -> Union[Type[Route], None]:
-        driver = self.__drivers[driver_id]
-        driver_edge_id = traci.vehicle.getRoute(driver_id)[traci.vehicle.getRouteIndex(driver_id)]
-        driver_pos = traci.vehicle.getLanePosition(driver_id)
-        random_route = self.__net.generate_random_sim_route_in_taz(
-            timestamp,
             dst_taz_id,
-            driver_edge_id,
-            driver_pos
-        )
-        if random_route is not None:
-            try:
-                self.__start_sumo_route(
-                    timestamp,
-                    driver_id,
-                    random_route
-                )
-            except:
-                raise Exception(f"Simulator.__generate_driver_random_route - Impossible to generate route for {driver_id}")
-        return random_route
+            attempts=10
+    ) -> Union[Type[Route], None]:
+        if attempts > 0:
+            driver = self.__drivers[driver_id]
+            driver_edge_id = traci.vehicle.getRoute(driver_id)[traci.vehicle.getRouteIndex(driver_id)]
+            driver_pos = traci.vehicle.getLanePosition(driver_id)
+            random_route = self.__net.generate_random_sim_route_in_taz(
+                timestamp,
+                dst_taz_id,
+                driver_edge_id,
+                driver_pos
+            )
+            if random_route is not None:
+                try:
+                    self.__start_sumo_route(
+                        timestamp,
+                        driver_id,
+                        random_route
+                    )
+                except:
+                    self.__generate_driver_random_route(
+                        timestamp,
+                        driver_id,
+                        dst_taz_id,
+                        attempts = attempts - 1
+                    )
+            return random_route
+        else:
+            raise Exception(f"Simulator.__generate_driver_random_route - Impossible to generate route for {driver_id}")
 
     def __generate_sim_driver(
             self,
@@ -976,7 +986,6 @@ class Simulator:
         driver = self.__drivers[driver_id]
         driver_info = driver.get_info()
         if driver_info[DriverIdentifiers.DRIVER_STATE.value] == DriverState.RESPONDING:
-            assert customer_id is not None, "Simulator.__start_sumo_route - customer id is None."
             dst_pos = route.get_destination_position()
             #print(f"Pickup route for driver {driver_info['id']} and customer {customer_id}.")
             try:
@@ -990,6 +999,7 @@ class Simulator:
             except:
                 raise Exception(f"Simulator.__start_sumo_route - impossible to start route for {driver_id}")
         elif driver_info[DriverIdentifiers.DRIVER_STATE.value] == DriverState.PICKUP:
+            assert customer_id is not None, "Simulator.__start_sumo_route - customer id is None."
             dst_edge_id = route.get_destination_edge_id()
             traci.person.appendDrivingStage(
                 customer_id,
@@ -1033,7 +1043,7 @@ class Simulator:
             self,
             timestamp: float
     ):
-        def __start_new_random_route(driver_info):
+        def __start_new_random_route(driver_info: Type[DriverInfo]):
             driver_id = driver_info[DriverIdentifiers.DRIVER_ID.value]
             driver_edge_id = traci.vehicle.getRoute(driver_id)[traci.vehicle.getRouteIndex(driver_id)]
             driver_pos = traci.vehicle.getLanePosition(driver_id)

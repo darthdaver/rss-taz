@@ -21,7 +21,7 @@ def start_traci():
         sys.path.append(tools)
         sys.path.append(bin)
     else:
-        sys.exit("please declare environment variable 'SUMO_HOME'")
+        sys.exit("please declare environment variable 'SUMO_HOME_BREW'")
 
     def get_options():
         optParser = optparse.OptionParser()

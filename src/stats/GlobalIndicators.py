@@ -18,6 +18,7 @@ class GlobalIndicators:
             sim_duration: int,
             taz_ids: list[str]
     ):
+        sim_duration = sim_duration + 1
         self.__requested = { k: { t: 0 for t in taz_ids } for k in range(0,sim_duration) }
         self.__canceled = { k: { t: 0 for t in taz_ids } for k in range(0,sim_duration) }
         self.__accepted = { k: { t: 0 for t in taz_ids } for k in range(0,sim_duration) }
@@ -25,7 +26,6 @@ class GlobalIndicators:
         self.__rejections = { k: { t: 0 for t in taz_ids } for k in range(0,sim_duration) }
         self.__sim_failure = { k: { t: 0 for t in taz_ids } for k in range(0,sim_duration) }
         self.__sim_failure_rejections = { k: { t: 0 for t in taz_ids } for k in range(0,sim_duration) }
-        self.__tazs_stats = { k: { t: 0 for t in taz_ids } for k in range(0,sim_duration) }
         self.__idle_drivers = { k: { t: 0 for t in taz_ids } for k in range(0,sim_duration) }
         self.__responding_drivers = { k: { t: 0 for t in taz_ids } for k in range(0,sim_duration) }
         self.__pickup_drivers = { k: { t: 0 for t in taz_ids } for k in range(0,sim_duration) }

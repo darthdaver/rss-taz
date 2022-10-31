@@ -42,6 +42,23 @@ class Net:
                 return False
         return True
 
+    def check_route(
+            self,
+            src_edge: Type[SumoEdge],
+            dst_edge: Type[SumoEdge],
+            src_pos: float,
+            dst_pos: float
+    ):
+        route, cost = self.__sumo_net.getOptimalPath(
+            src_edge,
+            dst_edge,
+            fromPos=src_pos,
+            toPos=dst_pos
+        )
+        if route is not None:
+            return True
+        return False
+
     @staticmethod
     def convert_route_to_str(
             route: list[Type[SumoEdge]]
@@ -279,8 +296,6 @@ class Net:
     ) -> str:
         net = self.__select_net(net_type)
         if edge_id not in net[NetIdentifiers.EDGES.value]:
-            #print(f"Net.get_taz_id_from_edge_id - edge {edge_id} not in net type {net_type.value}")
-            #print(f"Net.get_taz_id_from_edge_id - Check outgoing edges for edge {edge_id}")
             found_outgoing_in_net = False
             if self.__sumo_net.hasEdge(edge_id):
                 edge = self.__sumo_net.getEdge(edge_id)
@@ -289,7 +304,6 @@ class Net:
                     outgoing_edge = outgoing_edges.pop(0)
                     outgoing_edge_id = outgoing_edge.getID()
                     if outgoing_edge_id in net[NetIdentifiers.EDGES.value]:
-                        #print(f"Net.get_taz_id_from_edge_id - Found outgoing edge {outgoing_edge_id} for edge {edge_id}")
                         edge_id = outgoing_edge_id
                         found_outgoing_in_net = True
                         break
@@ -372,9 +386,11 @@ class Net:
                     raise Exception("Net.is_arrived - out of index")
             if current_route_idx < 0:
                 return False
-            if current_route_idx == (len(driver_route) - 1):
+            if current_route_idx >= ((len(route_edge_id_list) - 1) - 1):  # penultimate
                 return True
             return False
+        else:
+            raise Exception(f"Net.is_arrived - unexpected driver state {driver_state}")
 
     def is_taz_id_in_net(
             self,
