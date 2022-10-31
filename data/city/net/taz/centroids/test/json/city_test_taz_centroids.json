@@ -1,0 +1,56 @@
+{
+  "po_0": {
+      "short": [
+        "po_0"
+      ],
+      "normal": [
+        "po_1"
+      ],
+      "long": [
+        "po_2"
+      ],
+      "extreme": [
+        "po_3"
+      ]
+  },
+  "po_1": {
+      "short": [
+        "po_1"
+      ],
+      "normal": [
+        "po_0",
+        "po_2"
+      ],
+      "long": [
+        "po_3"
+      ],
+      "extreme": []
+  },
+  "po_2": {
+      "short": [
+        "po_2"
+      ],
+      "normal": [
+        "po_1",
+        "po_3"
+      ],
+      "long": [
+        "po_0"
+      ],
+      "extreme": []
+  },
+  "po_3": {
+      "short": [
+        "po_3"
+      ],
+      "normal": [
+        "po_2"
+      ],
+      "long": [
+        "po_1"
+      ],
+      "extreme": [
+        "po_0"
+      ]
+  }
+}

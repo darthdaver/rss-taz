@@ -57,7 +57,11 @@ class NetParser():
     def export_net(self):
         utils.check_path_exists(Paths.NET_SIMULATOR)
         output_absolute_path = FileSetup.NET_SIMULATOR
-        utils.export_file_from_absolute_path(output_absolute_path, FileFormat.JSON, self.__net)
+        utils.export_file_from_absolute_path(
+            output_absolute_path,
+            FileFormat.JSON,
+            self.__net
+        )
 
     def export_csv_disctrict_edges(self, edge_districts_dict: dict, dataset: Type[Dataset]):
         content = "taz_id,edge_id\n"

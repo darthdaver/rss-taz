@@ -6,7 +6,7 @@
 - ./netprocessing.sh
 - python3 -m src.setup.NetParser
 - python3 -m src.setup.MobilityGenerator
-- ./sumo_tools/duarouter -n ./net_config/san-francisco.net.xml -r ./net_config/sf_sfcta_mobility.xml --ignore-errors=True --repair=True -o ./net_config/sf_sfcta_clean_mobility.rou.xml
+- ./sumo_tools/duarouter -n ./net_config/sf.net.xml -r ./net_config/sf_sfcta_mobility.xml --ignore-errors=True --repair=True -o ./net_config/sf_sfcta_clean_mobility.rou.xml
 
 TEST:
 - ./sumo_tools/duarouter -n ./net_config/city.net.xml -r ./net_config/city_test_mobility.xml --ignore-errors=True --repair=True -o ./net_config/city_test_clean_mobility.rou.xml

@@ -10,9 +10,7 @@ output*
 
 #data
 **/repos
-data_old
-data
-data_test
+data/sf
 logfile.txt
 traci_logfile.txt
 

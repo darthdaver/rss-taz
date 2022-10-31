@@ -767,11 +767,6 @@ class Simulator:
             )
         elif driver_info[DriverIdentifiers.DRIVER_STATE.value] in [DriverState.RESPONDING]:
             ride_info = self.__provider.find_ride_by_agent_id(driver_info, HumanType.DRIVER)
-            if ride_info is None:
-                print(traci.vehicle.getIDList())
-                print(traci.vehicle.getRoute(driver_id))
-                print(traci.vehicle.getRouteIndex(driver_id))
-                print(driver_info)
             ride_info = self.__provider.ride_request_rejected(
                 timestamp,
                 ride_info[RideIdentifier.RIDE_ID.value],
@@ -968,11 +963,6 @@ class Simulator:
             route_index = traci.vehicle.getRouteIndex()
             driver_road = traci.vehicle.getRoadID(driver_id)
             driver_edge = traci.vehicle.getRoute(driver_id)[route_index]
-            print(driver_id)
-            print(driver_route)
-            print(driver_road)
-            print(driver_edge)
-            print(route)
             raise Exception(f"Simulation.__set_driver_route - Impossible to set driver route for {driver_id}")
         driver.set_route_destination_position(stop_pos)
 
@@ -1020,7 +1010,6 @@ class Simulator:
             arrival_dst_pos = traci.person.getStage(customer_id).arrivalPos
             route.set_destination_position(arrival_dst_pos)
             driver_info = driver.get_info()
-            print(route.get_destination_position())
             try:
                 self.__set_driver_route(
                     driver_id,

@@ -67,7 +67,11 @@ class MobilityGenerator():
             self.__dataset_pickups,
             self.__city
         )
-        utils.export_file_from_absolute_path(output_xml_absolute_path, FileFormat.XML, self.__xml_root)
+        utils.export_file_from_absolute_path(
+            output_xml_absolute_path,
+            FileFormat.XML,
+            self.__xml_root
+        )
         utils.check_path_exists(Paths.MOBILITY_SIMULATOR)
         output_dict_absolute_path = FileSetup.MOBILITY_SIMULATOR
         utils.export_file_from_absolute_path(output_dict_absolute_path, FileFormat.JSON, self.__generation_dict)

@@ -1,7 +1,7 @@
 <configuration>
     <input>
         <net-file value="city.net.xml"/>
-        <route-files value="city_test_clean_mobility.rou.xml"/>
+        <route-files value="../data/city/mobility/sim/xml/mobility_simulator.rou.xml"/>
         <time-to-teleport value="0"/>
     </input>
     <time>

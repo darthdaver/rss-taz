@@ -36,7 +36,6 @@ def export_file(file_path: Type[Paths], file_name: Type[FileName], file_format: 
     city_prefix = f"{city.value}_" if not city is None else ""
     complete_file_name = f"{city_prefix}_{dataset.value}_{file_name.value}"
     absolute_path_to_file = f"{os.path.join(complete_file_path, complete_file_name)}.{file_format.value}"
-    print(absolute_path_to_file)
     if file_format == FileFormat.CSV:
         assert type(content) == str, f"utils.export_file - unknown content type: {type(content)} instead of str"
         with open(absolute_path_to_file, mode) as csv_out_file:

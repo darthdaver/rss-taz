@@ -74,7 +74,6 @@ class SumoNet(Resource):
             edge_id = args[ApiIdentifier.EDGE_ID]
             edge = self.sumo_net.getEdge(edge_id)
             edge_outgoings = list(map(lambda e: e.getID(), edge.getOutgoing()))
-            print(edge_outgoings)
             return {
                 ApiIdentifier.DATA.value: edge_outgoings
             }, 200
