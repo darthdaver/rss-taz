@@ -81,22 +81,39 @@ class Simulator:
             self,
             timestamp: float
     ):
-        # Solve disalignments
-        def __solve_customers_inconsistencies(customer_id: str):
-            if not customer_id in current_customers_list:
-                # print(f"Sumo forced {customer_id} remotion.")
-                self.__remove_customer_by_state(
-                    timestamp,
-                    customer_id
-                )
-            elif not customer_id in self.__sim_customers_ids:
-                # print(f"{customer_id} not removed by the sumo simulator.")
-                traci.person.remove(customer_id)
         current_customers_list = traci.person.getIDList()
         if not set(current_customers_list) == set(self.__sim_customers_ids):
             customers_diff = list(set(self.__sim_customers_ids).symmetric_difference(set(current_customers_list)))
             for customer_id in customers_diff:
-                __solve_customers_inconsistencies(customer_id)
+                if not customer_id in current_customers_list:
+                    # print(f"Sumo forced {customer_id} remotion.")
+                    customer = self.__customers[customer_id]
+                    customer_info = customer.get_info()
+                    customer_state = customer_info[CustomerIdentifier.CUSTOMER_STATE.value]
+                    if customer_state in [CustomerState.ACTIVE, CustomerState.PENDING]:
+                        customer_edge_id = customer_info[CustomerIdentifier.SRC_EDGE_ID.value]
+                        customer_taz_id = self.__net.get_taz_id_from_edge_id(customer_edge_id)
+                    elif customer_state in [CustomerState.PICKUP, CustomerState.ON_ROAD]:
+                        ride_info = self.__provider.find_ride_by_agent_id(customer_info, HumanType.CUSTOMER)
+                        driver_id = ride_info[RideIdentifier.DRIVER_ID.value]
+                        driver = self.__drivers[driver_id]
+                        driver_info = driver.get_info()
+                        current_edge_id = driver_info[DriverIdentifiers.CURRENT_EDGE_ID.value]
+                        customer_taz_id = self.__net.get_taz_id_from_edge_id(current_edge_id)
+                    else:
+                        raise Exception(
+                            f"Simulator.__check_customers_list - unexpected customer state {customer_state}")
+                    self.__remove_customer_by_state(
+                        timestamp,
+                        customer_id
+                    )
+                    self.__statistics.global_indicators.sim_failure(
+                        timestamp,
+                        customer_taz_id
+                    )
+                elif not customer_id in self.__sim_customers_ids:
+                    # print(f"{customer_id} not removed by the sumo simulator.")
+                    traci.person.remove(customer_id)
 
 
     def __check_drivers_list(
@@ -115,6 +132,12 @@ class Simulator:
                         timestamp,
                         driver_id,
                         DriverRemotionIdentifier.TRACI_FORCED_REMOTION
+                    )
+                    driver_edge_id = driver_info[DriverIdentifiers.CURRENT_EDGE_ID.value]
+                    driver_taz_id = self.__net.get_taz_id_from_edge_id(driver_edge_id)
+                    self.__statistics.global_indicators.sim_failure(
+                        timestamp,
+                        driver_taz_id
                     )
                 elif not driver_id in self.__sim_drivers_ids:
                     # print(f"{driver_id} not removed by the sumo simulator.")
@@ -210,7 +233,7 @@ class Simulator:
                         random_route
                     )
                 except:
-                    self.__generate_driver_random_route(
+                    random_route = self.__generate_driver_random_route(
                         timestamp,
                         driver_id,
                         dst_taz_id,
@@ -441,6 +464,10 @@ class Simulator:
             elif ride_request_state in [RideRequestState.NONE, RideRequestState.ROUTE_NOT_FOUND]:
                 assert customer_id is not None, "Simulator.managePendingRequest - id customer undefined on ride request not accomplished."
                 self.__remove_customer(customer_id)
+                self.__statistics.global_indicators.sim_failure(
+                    timestamp,
+                    customer_taz_id
+                )
                 if ride_request_state == RideRequestState.NONE:
                     self.__statistics.global_indicators.request_not_served(
                         timestamp,
@@ -594,11 +621,21 @@ class Simulator:
                     driver_id,
                     DriverRemotionIdentifier.ROUTE_NOT_FOUND
                 )
+                driver_taz_id = self.__net.get_taz_id_from_edge_id(driver_edge_id)
+                self.__statistics.global_indicators.sim_failure(
+                    timestamp,
+                    driver_taz_id
+                )
         except:
             self.__remove_driver(
                 timestamp,
                 driver_id,
                 DriverRemotionIdentifier.SET_ROUTE_FAILED
+            )
+            driver_taz_id = self.__net.get_taz_id_from_edge_id(driver_edge_id)
+            self.__statistics.global_indicators.sim_failure(
+                timestamp,
+                driver_taz_id
             )
             return
 
@@ -698,9 +735,6 @@ class Simulator:
         #print(f"Remove {customer_id}")
         customer = self.__customers[customer_id]
         customer_info = customer.get_info()
-        if customer_id not in self.__customers_by_state[customer_info[HumanEnum.HUMAN_STATE.value].value]:
-            #f"{customer_id} with state {customer_info[HumanEnum.HUMAN_STATE.value]}")
-            pass
         self.__customers_by_state[customer_info[HumanEnum.HUMAN_STATE.value].value].remove(customer_id)
         self.__customers_by_state[CustomerState.INACTIVE.value].append(customer_id)
         customer.set_state(CustomerState.INACTIVE)
@@ -719,12 +753,13 @@ class Simulator:
     ):
         customer = self.__customers[customer_id]
         customer_info = customer.get_info()
-        if customer_info[HumanEnum.HUMAN_STATE.value] in [CustomerState.ACTIVE, CustomerState.PENDING]:
+        customer_state = customer_info[CustomerIdentifier.CUSTOMER_STATE.value]
+        if customer_state in [CustomerState.ACTIVE, CustomerState.PENDING]:
             ride_info = self.__provider.find_ride_by_agent_id(customer_info, HumanType.CUSTOMER)
             if ride_info is not None:
                 ride_info = self.__provider.remove_ride_simulation_error(ride_info[RideIdentifier.RIDE_ID.value])
             self.__remove_customer(customer_id)
-        elif customer_info[HumanEnum.HUMAN_STATE.value] in [CustomerState.PICKUP, CustomerState.ON_ROAD]:
+        elif customer_state in [CustomerState.PICKUP, CustomerState.ON_ROAD]:
             ride_info = self.__provider.find_ride_by_agent_id(customer_info, HumanType.CUSTOMER)
             self.__safe_remotion(
                 timestamp,
@@ -733,6 +768,8 @@ class Simulator:
                 ride_info[RideIdentifier.RIDE_ID.value],
                 DriverRemotionIdentifier.TRACI_FORCED_CUSTOMER_REMOTION_DURING_RIDE
             )
+        else:
+            raise Exception(f"Simulator.__remove_customer_by_state - unexpected customer state {customer_state}")
 
     def __remove_driver(
             self,
@@ -775,6 +812,10 @@ class Simulator:
                 driver_id,
                 reason
             )
+            self.__statistics.global_indicators.sim_failure(
+                timestamp,
+                driver_taz_id
+            )
         elif driver_info[DriverIdentifiers.DRIVER_STATE.value] in [DriverState.RESPONDING]:
             ride_info = self.__provider.find_ride_by_agent_id(driver_info, HumanType.DRIVER)
             ride_info = self.__provider.ride_request_rejected(
@@ -786,7 +827,7 @@ class Simulator:
                 ride_info[RideIdentifier.RIDE_ID.value],
                 RideRequestState.REJECTED
             )
-            self.__statistics.global_indicators.sim_failure(
+            self.__statistics.global_indicators.sim_failure_rejection(
                 timestamp,
                 driver_taz_id
             )
@@ -803,6 +844,10 @@ class Simulator:
                 ride_info[RideIdentifier.CUSTOMER_ID.value],
                 ride_info[RideIdentifier.RIDE_ID.value],
                 reason
+            )
+            self.__statistics.global_indicators.sim_failure(
+                timestamp,
+                driver_taz_id
             )
 
     def __update_tazs(
@@ -945,6 +990,14 @@ class Simulator:
         self.__drivers_by_state[DriverState.RESPONDING.value].append(driver_id)
         return driver.receive_request()
 
+    def temp(
+            self,
+            driver_id,
+            route,
+            stop_pos
+    ):
+        self.__set_driver_route(driver_id, route, stop_pos)
+
     def __set_driver_route(
             self,
             driver_id: str,
@@ -956,12 +1009,13 @@ class Simulator:
         driver = self.__drivers[driver_id]
         dst_edge_id = route.get_destination_edge_id()
         dst_edge = self.__sumo_net.getEdge(dst_edge_id)
+        driver_pos = traci.vehicle.getLanePosition(driver_id)
         if stop_pos == -1:
             dst_edge_length = dst_edge.getLength()
             stop_pos = round(dst_edge_length/2,2) # random.random() * dst_edge_length
         if stop_pos < 1.0:
             raise Exception(f"Simulation.__set_driver_route - Raised exception to avoid sumo bug on stop pos < 1 {stop_pos}")
-        if len(route.get_route_edge_id_list()) == 1:
+        if len(route.get_route_edge_id_list()) == 1 and stop_pos <= driver_pos:
             raise Exception(f"Simulation.__set_driver_route - Raised exception to avoid sumo bug when customer and driver are on the same edge, but customer pos < driver pos")
         try:
             route_id = route.get_route_id()
@@ -970,7 +1024,7 @@ class Simulator:
         except:
             driver_info = driver.get_info()
             driver_route = driver_info[DriverIdentifiers.ROUTE.value]
-            route_index = traci.vehicle.getRouteIndex()
+            route_index = traci.vehicle.getRouteIndex(driver_id)
             driver_road = traci.vehicle.getRoadID(driver_id)
             driver_edge = traci.vehicle.getRoute(driver_id)[route_index]
             raise Exception(f"Simulation.__set_driver_route - Impossible to set driver route for {driver_id}")
@@ -1116,11 +1170,19 @@ class Simulator:
                                 driver_id,
                                 DriverRemotionIdentifier.ROUTE_NOT_FOUND
                             )
+                            self.__statistics.global_indicators.sim_failure(
+                                timestamp,
+                                driver_taz_id
+                            )
                     except:  ### generate new driver
                         self.__remove_driver(
                             timestamp,
                             driver_id,
                             DriverRemotionIdentifier.SET_ROUTE_FAILED
+                        )
+                        self.__statistics.global_indicators.sim_failure(
+                            timestamp,
+                            driver_taz_id
                         )
                         return
             elif driver_state in [DriverState.IDLE, DriverState.RESPONDING]:
@@ -1159,7 +1221,7 @@ class Simulator:
                                     driver_info,
                                     DriverRemotionIdentifier.ROUTE_NOT_FOUND
                                 )
-                                self.__statistics.global_indicators.sim_failure(
+                                self.__statistics.global_indicators.sim_failure_rejection(
                                     timestamp,
                                     driver_taz_id
                                 )
@@ -1168,6 +1230,10 @@ class Simulator:
                                     timestamp,
                                     driver_id,
                                     DriverRemotionIdentifier.ROUTE_NOT_FOUND
+                                )
+                                self.__statistics.global_indicators.sim_failure(
+                                    timestamp,
+                                    driver_taz_id
                                 )
                             return
                     except:  ### generate new driver
@@ -1187,6 +1253,10 @@ class Simulator:
                                 driver_id,
                                 DriverRemotionIdentifier.SET_ROUTE_FAILED
                             )
+                            self.__statistics.global_indicators.sim_failure(
+                                timestamp,
+                                driver_taz_id
+                            )
                         return
 
 
@@ -1202,16 +1272,14 @@ class Simulator:
                     move_probability = 0
                     if not taz_id == other_taz_id:
                         other_area_info = self.__net.get_taz_info(other_taz_id)
-                        for min_diff, max_diff, probability in self.__driver_setup[ConfigEnum.MOVE_DISTRIBUTION][
-                            ConfigEnum.MOVE_DIFF_PROBABILITIES]:
+                        for min_diff, max_diff, probability in self.__driver_setup[ConfigEnum.MOVE_DISTRIBUTION][ConfigEnum.MOVE_DIFF_PROBABILITIES]:
                             surge_multiplier_area = taz_info[ProviderIdentifier.SURGE_MULTIPLIERS][0]
                             surge_multiplier_other_area = other_area_info[ProviderIdentifier.SURGE_MULTIPLIERS][0]
                             diff_surge_multiplier = surge_multiplier_area - surge_multiplier_other_area
                             if min_diff < diff_surge_multiplier < max_diff:
                                 move_probability = probability
                                 break
-                        for driver_id in self.__get_drivers_in_taz(
-                                other_taz_id):  ### check if nested parallellization works
+                        for driver_id in self.__get_drivers_in_taz(other_taz_id):
                             driver_info = self.__drivers[driver_id].get_info()
                             if driver_info[DriverIdentifiers.DRIVER_STATE.value] == DriverState.IDLE:
                                 if utils.random_choice(move_probability):
@@ -1353,23 +1421,24 @@ class Simulator:
                             self.__drivers_by_state[DriverState.IDLE.value].append(driver_id)
                             driver_info = driver.update_end(timestamp, random_route)
                         else:
-                            # print(f"Simulator.__update_rides_state | {driver_id} not found in calling net.is_arrived_by_sumo_edge method.")
-                            # self.__generate_driver(
-                            #    timestamp,
-                            #    driver_taz_id,
-                            #    last_ride_timestamp = driver_info[DriverIdentifiers.LAST_RIDE_TIMESTAMP.value],
-                            #    rides_completed = driver_info[DriverIdentifiers.RIDES_COMPLETED.value]
-                            # )
                             self.__remove_driver(
                                 timestamp,
                                 driver_id,
                                 DriverRemotionIdentifier.ROUTE_NOT_FOUND
+                            )
+                            self.__statistics.global_indicators.sim_failure(
+                                timestamp,
+                                driver_taz_id
                             )
                     except:
                         self.__remove_driver(
                             timestamp,
                             driver_id,
                             DriverRemotionIdentifier.SET_ROUTE_FAILED
+                        )
+                        self.__statistics.global_indicators.sim_failure(
+                            timestamp,
+                            driver_taz_id
                         )
                         return
         pickup_rides = self.__provider.get_rides_info_by_state(RideState.PICKUP.value)

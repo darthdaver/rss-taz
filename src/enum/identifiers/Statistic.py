@@ -22,3 +22,5 @@ class Statistic(str, Enum):
     PENDING_CUSTOMERS = "pending_customers"
     PICKUP_CUSTOMERS = "pickup_customers"
     ON_ROAD_CUSTOMERS = "on_road_customers"
+    SIM_FAILURE_REJECTIONS = "sim_failure_rejections"
+    SIM_FAILURE = "sim_failure"

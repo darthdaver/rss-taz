@@ -380,9 +380,19 @@ class Net:
             route_edge_id_list = driver_info[DriverIdentifier.ROUTE.value][RouteIdentifier.EDGE_ID_LIST.value]
             traci_driver_route = traci.vehicle.getRoute(driver_id)
             if not len(route_edge_id_list) == len(traci_driver_route):
+                print(current_route_idx)
+                print(len(route_edge_id_list))
+                print(route_edge_id_list)
+                print(traci.vehicle.getRoute(driver_id))
+                print(driver_info)
                 raise Exception("Net.is_arrived - out of index.")
             for idx, edge_id in enumerate(traci_driver_route):
                 if not edge_id == traci_driver_route[idx]:
+                    print(current_route_idx)
+                    print(len(route_edge_id_list))
+                    print(route_edge_id_list)
+                    print(traci.vehicle.getRoute(driver_id))
+                    print(driver_info)
                     raise Exception("Net.is_arrived - out of index")
             if current_route_idx < 0:
                 return False

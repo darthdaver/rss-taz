@@ -43,6 +43,8 @@ class GlobalIndicators:
             StatisticIdentifier.ACCEPTED.value: {**self.__accepted},
             StatisticIdentifier.NOT_SERVED.value: {**self.__not_served},
             StatisticIdentifier.REJECTIONS.value: {**self.__rejections},
+            StatisticIdentifier.SIM_FAILURE.value: {**self.__sim_failure},
+            StatisticIdentifier.SIM_FAILURE_REJECTIONS.value: {**self.__sim_failure_rejections},
             StatisticIdentifier.IDLE_DRIVERS.value: {**self.__idle_drivers},
             StatisticIdentifier.RESPONDING_DRIVERS.value: {**self.__responding_drivers},
             StatisticIdentifier.PICKUP_DRIVERS.value: {**self.__pickup_drivers},

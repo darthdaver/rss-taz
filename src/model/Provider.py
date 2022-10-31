@@ -236,7 +236,14 @@ class Provider:
             current_candidate = ride_info[RideIdentifier.REQUEST.value][RequestIdentifier.CURRENT_CANDIDATE.value]
             assert current_candidate is not None, "Provider.manage_pending_request - candidate undefined [1]"
             if current_candidate and current_candidate[RequestIdentifier.RESPONSE_COUNT_DOWN.value] == current_candidate[RequestIdentifier.SEND_REQUEST_BACK_TIMER.value]:
-                return (ride_info, RideRequestState.RESPONSE, current_candidate[RequestIdentifier.CANDIDATE_ID.value])
+                current_candidate_id = current_candidate[RequestIdentifier.CANDIDATE_ID.value]
+                current_candidate_edge_id = traci.vehicle.getRoadID(current_candidate_id)
+                current_candidate_edge = self.__sumo_net.getEdge(current_candidate_edge_id)
+                if current_candidate_edge.isSpecial():
+                    # take into account bug on traci set route when driver is on internal edge
+                    return (ride_info, RideRequestState.WAITING, current_candidate[RequestIdentifier.CANDIDATE_ID.value])
+                else:
+                    return (ride_info, RideRequestState.RESPONSE, current_candidate[RequestIdentifier.CANDIDATE_ID.value])
             else:
                 ride.decrement_count_down_request()
                 assert current_candidate is not None, "Provider.manage_pending_request - candidate undefined [2]"
