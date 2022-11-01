@@ -237,8 +237,8 @@ class MobilityGenerator():
         for taz_id, taz_dict in self.__pickups_file.items():
             pickups_mean = round(taz_dict['mean'])
             pickups_std = round(taz_dict['std'])
-            customer_uniform_dist = sorted(np.random.uniform(self.__begin, self.__end, round(pickups_mean/5)).astype(int).tolist())
-            driver_uniform_dist = sorted(np.random.uniform(self.__begin, self.__end, round(pickups_mean/50 + pickups_std / 10)).astype(int).tolist())
+            customer_uniform_dist = sorted(np.random.uniform(self.__begin, self.__end, round(pickups_mean)).astype(int).tolist())
+            driver_uniform_dist = sorted(np.random.uniform(self.__begin, self.__end, round(pickups_mean/2)).astype(int).tolist())
             if random.random() <= 0.7:
                 driver_uniform_dist.insert(0, random.randint(1, 11))
                 driver_uniform_dist.pop()

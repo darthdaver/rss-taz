@@ -1,6 +1,5 @@
 import time
-import multiprocessing
-
+import os
 from src.enum.identifiers.Statistic import Statistic as StatisticIdentifier
 from src.enum.setup.FileSetup import FileSetup
 from src.enum.state.CustomerState import CustomerState
@@ -12,10 +11,8 @@ from src.enum.types.EventType import EventType
 from src.enum.types.HumanType import HumanType
 from src.enum.types.RouteType import RouteType
 from src.enum.types.NetType import NetType
-from src.enum.identifiers.Net import Net as NetIdentifier
 from src.enum.identifiers.Provider import Provider as ProviderIdentifier        ###
 from src.enum.identifiers.Route import Route as RouteIdentifier
-from src.enum.identifiers.EnergyIndexes import EnergyIndexes as EnergyIndexesIdentifier     ###
 from src.enum.identifiers.Config import Config as ConfigEnum        ###
 from src.enum.identifiers.Human import Human as HumanEnum       ###
 from src.enum.identifiers.Customer import Customer as CustomerIdentifier        ###
@@ -71,11 +68,11 @@ class Simulator:
         self.__temp_customers_gen = 0
         self.__timeline_generation = utils.read_setup(FileSetup.MOBILITY_SIMULATOR.value)
         self.__scenario = Scenario(utils.read_setup(FileSetup.SCENARIO.value))
-        self.__cpu_cores = multiprocessing.cpu_count()
         self.__statistics = Statistics(
             self.__simulator_setup[ConfigEnum.CHECKPOINTS.value][ConfigEnum.SIMULATION_DURATION.value],
             self.__net.get_all_taz_ids(NetType.BOUNDARY_NET)
         )
+        self.__taz_content = ""
 
     def __check_customers_list(
             self,
@@ -241,7 +238,7 @@ class Simulator:
                     )
             return random_route
         else:
-            raise Exception(f"Simulator.__generate_driver_random_route - Impossible to generate route for {driver_id}")
+            raise None
 
     def __generate_sim_driver(
             self,
@@ -420,10 +417,6 @@ class Simulator:
                 ride_info[RideIdentifier.RIDE_ID.value],
                 driver_id
             )
-            ride_info = self.__provider.set_ride_request_state(
-                ride_info[RideIdentifier.RIDE_ID.value],
-                RideRequestState.REJECTED
-            )
 
         def __process_pending_request(ride_info: RideInfo):
             driver_acceptance_distribution = self.__driver_setup[DriverIdentifiers.DRIVER_ACCEPTANCE_DISTRIBUTION.value]
@@ -534,7 +527,6 @@ class Simulator:
                                 ride_info[RideIdentifier.RIDE_ID.value],
                                 driver_id
                             )
-                            ride_info = self.__provider.set_ride_request_state(ride_info[RideIdentifier.RIDE_ID.value], RideRequestState.REJECTED)
                             self.__statistics.global_indicators.sim_failure_rejection(
                                 timestamp,
                                 customer_taz_id
@@ -577,7 +569,6 @@ class Simulator:
                         ride_info[RideIdentifier.RIDE_ID.value],
                         driver_id
                     )
-                    ride_info = self.__provider.set_ride_request_state(ride_info[RideIdentifier.RIDE_ID.value], RideRequestState.REJECTED)
                     self.__statistics.global_indicators.rejected(
                         timestamp,
                         customer_taz_id
@@ -854,6 +845,7 @@ class Simulator:
             self,
             timestamp: str
     ):
+        statistics = []
         taz_ids = self.__net.get_all_taz_ids(NetType.BOUNDARY_NET)
         for taz_id in taz_ids:
             drivers_in_taz = self.__get_drivers_in_taz(taz_id)
@@ -938,7 +930,7 @@ class Simulator:
             )
 
             checkpoint_surge_multiplier = self.__simulator_setup[ConfigEnum.CHECKPOINTS.value][ConfigEnum.TIME_UPDATE_SURGE_MULTIPLIER.value]
-            if timestamp % self.__simulator_setup[ConfigEnum.CHECKPOINTS.value][ConfigEnum.TIME_UPDATE_SURGE_MULTIPLIER.value] == 0.0:
+            if timestamp % checkpoint_surge_multiplier == 0.0:
                 num_not_served = 0
                 taz_info = self.__net.get_taz_info(taz_id)
                 surge_multiplier = taz_info[ProviderIdentifier.SURGE_MULTIPLIERS.value][0]
@@ -947,7 +939,7 @@ class Simulator:
                 for i in range(int(start_timestamp) + 1, int(timestamp)):
                     num_not_served += global_indicators_info[StatisticIdentifier.NOT_SERVED][i][taz_id]
                 balance = self.__provider.compute_balance(
-                    len(pending_customers),
+                    len(active_customers + pending_customers),
                     len(idle_drivers) + len(responding_drivers),
                     num_not_served
                 )
@@ -963,6 +955,27 @@ class Simulator:
                     new_surge_multiplier,
                     NetType.BOUNDARY_NET
                 )
+
+                statistics.append({
+                    "taz_id": taz_id,
+                    "idle_drivers": len(idle_drivers),
+                    "responding_drivers": len(responding_drivers),
+                    "pickup_drivers": len(pickup_drivers),
+                    "on_road_drivers": len(on_road_drivers),
+                    "moving_drivers": len(moving_drivers),
+                    "active_customers": len(active_customers),
+                    "pending_customers": len(pending_customers),
+                    "pickup_customers": len(pickup_customers),
+                    "on_road_customers": len(on_road_customers),
+                    "balance": round(balance, 2),
+                    "surge_multiplier": round(new_surge_multiplier, 2)
+                })
+
+        if timestamp % checkpoint_surge_multiplier == 0.0:
+            self.save_taz_info_agents(
+                timestamp,
+                statistics
+            )
 
 
     def __safe_remotion(
@@ -1006,27 +1019,25 @@ class Simulator:
             flags: int = 0,
             duration: int = 1
     ):
+
         driver = self.__drivers[driver_id]
         dst_edge_id = route.get_destination_edge_id()
         dst_edge = self.__sumo_net.getEdge(dst_edge_id)
         driver_pos = traci.vehicle.getLanePosition(driver_id)
         if stop_pos == -1:
             dst_edge_length = dst_edge.getLength()
-            stop_pos = round(dst_edge_length/2,2) # random.random() * dst_edge_length
+            stop_pos = dst_edge_length # random.random() * dst_edge_length
         if stop_pos < 1.0:
             raise Exception(f"Simulation.__set_driver_route - Raised exception to avoid sumo bug on stop pos < 1 {stop_pos}")
-        if len(route.get_route_edge_id_list()) == 1 and stop_pos <= driver_pos:
+        if len(route.get_route_edge_id_list()) == 1: #and stop_pos <= driver_pos:
+            # Manage case of traci.exceptions.TraCIException: stop for vehicle X on lane Y is too close to brake and
+            # bug when customer and driver are on the same edge, but customer pos < driver pos
             raise Exception(f"Simulation.__set_driver_route - Raised exception to avoid sumo bug when customer and driver are on the same edge, but customer pos < driver pos")
         try:
             route_id = route.get_route_id()
             traci.vehicle.setRouteID(driver_id, route_id)
             traci.vehicle.setStop(driver_id, dst_edge_id, stop_pos, duration=duration, flags=flags)
         except:
-            driver_info = driver.get_info()
-            driver_route = driver_info[DriverIdentifiers.ROUTE.value]
-            route_index = traci.vehicle.getRouteIndex(driver_id)
-            driver_road = traci.vehicle.getRoadID(driver_id)
-            driver_edge = traci.vehicle.getRoute(driver_id)[route_index]
             raise Exception(f"Simulation.__set_driver_route - Impossible to set driver route for {driver_id}")
         driver.set_route_destination_position(stop_pos)
 
@@ -1118,20 +1129,15 @@ class Simulator:
                 reason: Type[DriverRemotionIdentifier]
         ):
             driver_id = driver_info[DriverIdentifiers.DRIVER_ID.value]
-            if driver_info[DriverIdentifiers.DRIVER_STATE.value] in [DriverState.RESPONDING]:
-                ride_info = self.__provider.find_ride_by_agent_id(
-                    driver_info,
-                    HumanType.DRIVER
-                )
-                ride_info = self.__provider.ride_request_rejected(
-                    timestamp,
-                    ride_info[RideIdentifier.RIDE_ID.value],
-                    driver_id
-                )
-                ride_info = self.__provider.set_ride_request_state(
-                    ride_info[RideIdentifier.RIDE_ID.value],
-                    RideRequestState.REJECTED
-                )
+            ride_info = self.__provider.find_ride_by_agent_id(
+                driver_info,
+                HumanType.DRIVER
+            )
+            ride_info = self.__provider.ride_request_rejected(
+                timestamp,
+                ride_info[RideIdentifier.RIDE_ID.value],
+                driver_id
+            )
             self.__remove_driver(
                 timestamp,
                 driver_id,
@@ -1202,7 +1208,8 @@ class Simulator:
                     stop_probability = (timestamp - last_ride_timestamp) * self.__get_human_distribution(
                         stop_distribution, driver_info[HumanEnum.PERSONALITY.value])
                     if utils.random_choice(stop_probability):
-                        # print(f"Driver {driver_id} stop to work with probability {round(stop_probability, 4)} [2]")
+                        print(f"Driver {driver_id} stop to work in taz {driver_taz_id} with probability {round(stop_probability, 4)} [2]")
+                        print(f"Surge multiplier value: {surge_multiplier}")
                         self.__remove_driver(
                             timestamp,
                             driver_id,
@@ -1587,7 +1594,7 @@ class Simulator:
                 simulation_performances
             )
             finish_simulation = time.perf_counter()
-            print(f"Simulation ended in {round(finish_simulation - start_simulation, 4)} seconds.")
+        print(f"Simulation ended in {round(finish_simulation - start_simulation, 4)} seconds.")
         traci.close()
         sys.stdout.flush()
 
@@ -1668,3 +1675,30 @@ class Simulator:
 
     def get_drivers(self):
         return self.__drivers
+
+    def save_taz_info_agents(
+            self,
+            timestamp,
+            statistics
+    ):
+        self.__taz_content += "*" * 20 + "\n"
+        self.__taz_content += f"TIMESTAMP: {timestamp}\n"
+        self.__taz_content += "*" * 20 + "\n"
+        for taz_stats in statistics:
+            self.__taz_content += f"ID TAZ: {taz_stats['taz_id']}\n"
+            self.__taz_content += f"IDLE DRIVERS: {taz_stats['idle_drivers']}\n"
+            self.__taz_content += f"RESPONDING DRIVERS: {taz_stats['responding_drivers']}\n"
+            self.__taz_content += f"PICKUP DRIVERS: {taz_stats['pickup_drivers']}\n"
+            self.__taz_content += f"ON ROAD DRIVERS: {taz_stats['on_road_drivers']}\n"
+            self.__taz_content += f"MOVING DRIVERS: {taz_stats['moving_drivers']}\n"
+            self.__taz_content += f"ACTIVE CUSTOMERS: {taz_stats['active_customers']}\n"
+            self.__taz_content += f"PENDING CUSTOMERS: {taz_stats['pending_customers']}\n"
+            self.__taz_content += f"PICKUP CUSTOMERS: {taz_stats['pickup_customers']}\n"
+            self.__taz_content += f"ON ROAD CUSTOMERS: {taz_stats['on_road_customers']}\n"
+            self.__taz_content += f"BALANCE: {taz_stats['balance']}\n"
+            self.__taz_content += f"SURGE_MULTIPLIER: {taz_stats['surge_multiplier']}\n"
+            self.__taz_content += "-" * 20 + "\n"
+        path = f"{os.getcwd()}/output/taz_info_drivers.txt"
+        with open(path, 'a') as outfile:
+            outfile.write(self.__taz_content)
+        self.__taz_content = ""

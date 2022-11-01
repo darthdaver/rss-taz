@@ -104,9 +104,9 @@ class Provider:
             if idle_drivers_count == 0:
                 return 1 / (idle_customers_count + 1)
             else:
-                return 0.7 + (idle_drivers_count / (5*idle_customers_count))
+                return max(0.7 + (idle_drivers_count / (10*idle_customers_count)) - 0.1 * num_not_served, 0)
         else:
-            return max(0.9 + (idle_drivers_count / 10) - 0.1 * num_not_served, 0)
+            return max(0.9 + (idle_drivers_count / 25) - 0.1 * num_not_served, 0)
 
     def compute_price(
             self,
@@ -491,6 +491,7 @@ class Provider:
         drivers_candidates = ride_info[RideIdentifier.REQUEST.value][RequestIdentifier.DRIVERS_CANDIDATE.value]
         for candidate in drivers_candidates:
             if candidate and candidate[RequestIdentifier.CANDIDATE_ID.value] in free_drivers_ids:
-                candidate[RequestIdentifier.CANDIDATE_STATE.value] = CandidateState.PROCESSED.value
-                return candidate
+                if candidate[RequestIdentifier.CANDIDATE_STATE.value] == CandidateState.QUEUE.value:
+                    candidate[RequestIdentifier.CANDIDATE_STATE.value] = CandidateState.PROCESSED.value
+                    return candidate
         return None
