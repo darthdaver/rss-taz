@@ -7,7 +7,6 @@ from src.model.Route import Route
 from src.enum.types.RouteType import RouteType
 from src.types.Route import RouteInfo
 from src.types.Customer import CustomerInfo
-import multiprocessing_on_dill as multiprocessing
 from src.enum.identifiers.Human import Human as HumanIdentifier
 from src.enum.identifiers.Driver import Driver as DriverIdentifier
 from src.enum.identifiers.Ride import Ride as RideIdentifier
@@ -36,7 +35,6 @@ class Provider:
         self.__rides_by_state: Dict[str, list[str]] = {k.value: [] for k in RideState}
         self.__fare: FareSetup = provider_setup[ProviderIdentifier.FARE.value]
         self.__request: RequestSetup = provider_setup[ProviderIdentifier.REQUEST.value]
-        self.__cpu_cores = multiprocessing.cpu_count()
         self.__sumo_net = sumo_net
 
 

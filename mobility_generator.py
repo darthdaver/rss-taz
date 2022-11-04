@@ -1,4 +1,6 @@
 import optparse
+
+from src.enum.setup.Scenario import Scenario
 from src.setup.MobilityGenerator import MobilityGenerator
 from src.enum.setup.Dataset import Dataset
 from src.enum.setup.City import City
@@ -9,6 +11,7 @@ env_settings = Settings()
 CITY = City(env_settings.CITY)
 DATASET_PICKUPS = Dataset(env_settings.DATASET_PICKUPS)
 DATASET_TRAVEL_TIMES = Dataset(env_settings.DATASET_TRAVEL_TIMES)
+SCENARIO = Scenario(env_settings.SCENARIO)
 
 if __name__ == "__main__":
     def get_options():

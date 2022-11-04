@@ -23,3 +23,6 @@ class Net(str, Enum):
     STD_TRAVEL_TIME = "std_travel_time"
     DRIVERS = "drivers"
     ID = "id"
+    RIDE = "ride"
+    CUSTOMER = "customer"
+    DRIVER = "driver"

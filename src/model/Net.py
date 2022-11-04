@@ -16,7 +16,7 @@ from src.types.Net import EdgeInfo
 from src.model.Route import Route
 from src.enum.types.RouteType import RouteType
 from src.types.Human import PersonalityDistribution
-from typing import Type, Union, Optional
+from typing import Type, Union, Optional, Dict
 import traci
 import sumolib
 from sumolib.net import Net as SumoNet
@@ -446,14 +446,24 @@ class Net:
     def update_personality_distribution_in_taz(
             self,
             taz_id: str,
-            personality_distribution: PersonalityDistribution,
+            personality_distribution: list[[float, str]],
             agent_type: Type[HumanType],
             net_type: Type[NetType] = NetType.BOUNDARY_NET
     ):
         net = self.__select_net(net_type)
         assert agent_type in [HumanType.DRIVER, HumanType.CUSTOMER], f"Map.update_personality_distribution - unknown label {agent_type}"
         taz = net[NetIdentifiers.TAZ.value][taz_id]
-        taz[ConfigIdentifier.PERSONALITY_DISTRIBUTION.value][agent_type.value.lower()] = personality_distribution
+        taz[agent_type.value.lower()][ConfigIdentifier.PERSONALITY_DISTRIBUTION.value] = personality_distribution
+
+    def update_stop_work_distribution_in_taz(
+            self,
+            taz_id: str,
+            stop_work_distribution: Dict[str, float],
+            net_type: Type[NetType] = NetType.BOUNDARY_NET
+    ):
+        net = self.__select_net(net_type)
+        taz = net[NetIdentifiers.TAZ.value][taz_id]
+        taz[ConfigIdentifier.DRIVER.value][DriverIdentifier.STOP_WORK_DISTRIBUTION.value] = stop_work_distribution
 
     def update_taz_balance(
             self,

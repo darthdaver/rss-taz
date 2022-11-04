@@ -84,15 +84,9 @@ def generate_absolute_path_to_file(path: Type[Paths], file_name: Type[FileName],
     return f"{os.path.join(complete_path, complete_file_name)}.{file_format.value}"
 
 
-def generate_absolute_path_to_file(path: Type[Paths], file_name: Type[FileName], file_format: Type[FileFormat], dataset: Type[Dataset], city: Type[City]):
-    complete_file_name = f"{city.value}_{dataset.value}_{file_name.value}"
-    complete_path = f"{os.path.join(path.value, dataset.value, file_format.value)}"
-    return f"{os.path.join(complete_path, complete_file_name)}.{file_format.value}"
-
-
-def generate_sim_out_absolute_path_to_file(path: Type[Paths], file_name: Type[FileName], file_format: Type[FileFormat], scenario: Type[Scenario], city: Type[City]):
-    complete_file_name = f"{city.value}_{scenario.value}_{file_name.value}"
-    complete_path = f"{os.path.join(path.value, scenario.value, file_format.value)}"
+def generate_absolute_path_to_file(path: Type[Paths], file_name: Type[FileName], file_format: Type[FileFormat], identifier: Union[Type[Dataset],Type[Scenario]], city: Type[City]):
+    complete_file_name = f"{city.value}_{identifier.value}_{file_name.value}"
+    complete_path = f"{os.path.join(path.value, identifier.value, file_format.value)}"
     return f"{os.path.join(complete_path, complete_file_name)}.{file_format.value}"
 
 

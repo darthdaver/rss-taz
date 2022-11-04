@@ -1,3 +1,6 @@
+from src.enum.identifiers.Scenario import Scenario as ScenarioIdentifier
+from src.enum.types.EventType import EventType
+from src.model.Scenario import Scenario
 from src.utils import utils
 from src.enum.setup.FileSetup import FileSetup
 from src.enum.identifiers.Simulation import Simulation as SimulationEnum
@@ -46,8 +49,8 @@ class MobilityGenerator():
         self.__begin = begin
         self.__end = end
         self.__sumo_net = sumolib.net.readNet(net_path, withInternal=True)
+        self.__sim_net = utils.read_file_from_absolute_path_to_file(FileSetup.NET_SIMULATOR.value, FileFormat.JSON)
         self.__generation_dict = {str(i): {HumanEnum.CUSTOMERS.value: [], HumanEnum.DRIVERS.value: []} for i in range(begin, end+1)}
-        self.__ride_setup = utils.read_file_from_absolute_path_to_file(FileSetup.MOBILITY_RIDE.value, FileFormat.JSON)
         self.__pickups_file = utils.read_file_from_absolute_path_to_file(FileSetup.PICKUPS.value, FileFormat.JSON)
         self.__xml_root = ET.Element(MobilityXMLEnum.ROUTES.value)
         self.__net = Net(utils.read_file_from_absolute_path_to_file(FileSetup.NET_SIMULATOR.value, FileFormat.JSON), self.__sumo_net)
@@ -58,6 +61,7 @@ class MobilityGenerator():
         self.__generated_drivers = 0
         self.__discarded_customers = 0
         self.__discarded_drivers = 0
+        self.__scenario = Scenario(utils.read_setup(FileSetup.SCENARIO.value))
 
     def export_mobility(self):
         output_xml_absolute_path = utils.generate_absolute_path_to_file(
@@ -79,6 +83,16 @@ class MobilityGenerator():
     def generate_mobility(self):
         for timestamp, mobility in self.__timeline.items():
             timestamp = float(timestamp)
+            scenario_events = self.__scenario.check_events(
+                timestamp,
+                ScenarioIdentifier.SIMULATION_PLANNER
+            )
+            for type, params in scenario_events:
+                self.__perform_scenario_event(
+                    timestamp,
+                    type,
+                    params
+                )
             for taz_id in mobility["customers"]:
                 print(f"Generate customer {self.__customer_counter} - taz_id: {taz_id} - timestamp: {timestamp}")
                 if self.__net.is_taz_id_in_net(taz_id, NetType.MOBILITY_NET):
@@ -140,95 +154,108 @@ class MobilityGenerator():
             ET.SubElement(self.__xml_root, MobilityXMLEnum.VEHICLE_TYPE.value, attrib=v_type_attr)
 
     def __generate_customer(self, timestamp: float, taz_id: str, net_type: Type[NetType], src_edge_id: str = None, attempts: int = 0):
-        taz_info: TazInfo = self.__net.get_taz_info(taz_id, net_type)
-        personality_distribution: list[[float, PersonalityType]] = taz_info[ConfigEnum.PERSONALITY_DISTRIBUTION.value][HumanEnum.CUSTOMERS.value]
-        if src_edge_id is None:
-            src_edge_id = self.__net.get_random_edge_id_from_taz_id(taz_id, net_type=net_type)
-            if src_edge_id is None:
-                return
-        src_edge = self.__sumo_net.getEdge(src_edge_id)
-        if self.__check_edge_allows_vehicle_type(src_edge):
-            src_edge_lane_id = src_edge.getLanes()[0].getID()
-            src_edge_length = src_edge.getLength()
-            src_pos: float = round(src_edge_length/2, 2) #round(random.uniform(0.01, src_edge_length), 2)
-            src_taz_id = self.__net.get_taz_id_from_edge_id(src_edge_id, NetType.ANALYTICS_NET)
-            ride_length: Type[RideEnum] = RideEnum(utils.select_from_distribution(self.__ride_setup[ConfigEnum.ROUTE_LENGTH_DISTRIBUTION]))
-            dst_edge_id: str = self.__net.generate_destination_edge(taz_id, ride_length, net_type)
-            if dst_edge_id is None:
-                return
-            dst_edge = self.__sumo_net.getEdge(dst_edge_id)
-            dst_edge_length = dst_edge.getLength()
-            dst_pos = dst_edge_length # round(random.uniform(0.01, dst_edge_length), 2)
-            dst_taz_id = self.__net.get_taz_id_from_edge_id(dst_edge_id, NetType.ANALYTICS_NET)
-            if src_pos > 1 and dst_pos > 1:
-                if self.__check_edge_allows_vehicle_type(dst_edge) and self.__net.check_connection_travel_time(src_taz_id, dst_taz_id):
-                    if self.__net.check_route(src_edge, dst_edge, src_pos, dst_pos):
-                        personality: Type[PersonalityType] = self.__assign_personality(personality_distribution)
-                        customer_id = f"customer_{self.__customer_counter}"
-                        self.__customer_counter += 1
-                        customer_attr = {
-                            MobilityXMLEnum.ID.value: customer_id,
-                            MobilityXMLEnum.DEPART.value: str(timestamp),
-                            MobilityXMLEnum.DEPART_POS.value: str(src_pos)
-                        }
-                        stop_attr = {
-                            MobilityXMLEnum.LANE.value: src_edge_lane_id,
-                            MobilityXMLEnum.DEPART_POS.value: str(src_pos),
-                            MobilityXMLEnum.DEPART_POS.value: str(dst_pos),
-                            MobilityXMLEnum.DURATION.value: str(1000)  # set to huge number by default. When the ride will start the stop will be removed
-                        }
-                        self.__add_customer_to_dict(timestamp, customer_id, src_edge_id, dst_edge_id, personality, src_pos, dst_pos)
-                        person_xml: Type[ET.Element] = ET.SubElement(self.__xml_root, MobilityXMLEnum.PERSON, attrib=customer_attr)
-                        ET.SubElement(person_xml, MobilityXMLEnum.STOP.value, attrib=stop_attr)
+        events = self.__scenario.check_events(timestamp, ScenarioIdentifier.MOBILITY_PLANNER)
+        for type, params in events:
+            if type == EventType.GENERATION:
+                taz_info: TazInfo = self.__net.get_taz_info(taz_id, net_type)
+                personality_distribution: list[[float, PersonalityType]] = taz_info[ConfigEnum.CUSTOMER.value][ConfigEnum.PERSONALITY_DISTRIBUTION.value]
+                if src_edge_id is None:
+                    src_edge_id = self.__net.get_random_edge_id_from_taz_id(taz_id, net_type=net_type)
+                    if src_edge_id is None:
                         return
-        if attempts > 0:
-            self.__generate_customer(timestamp, taz_id, net_type, attempts=(attempts - 1))
-        else:
-            self.__discarded_customers += 1
+                src_edge = self.__sumo_net.getEdge(src_edge_id)
+                if self.__check_edge_allows_vehicle_type(src_edge):
+                    src_edge_lane_id = src_edge.getLanes()[0].getID()
+                    src_edge_length = src_edge.getLength()
+                    src_pos: float = round(src_edge_length/2, 2) #round(random.uniform(0.01, src_edge_length), 2)
+                    src_taz_id = self.__net.get_taz_id_from_edge_id(src_edge_id, NetType.ANALYTICS_NET)
+                    ride_length: Type[RideEnum] = RideEnum(
+                        utils.select_from_distribution(
+                            taz_info[ConfigEnum.RIDE.value][RideEnum.ROUTE_LENGTH_DISTRIBUTION.value]
+                        )
+                    )
+                    dst_edge_id: str = self.__net.generate_destination_edge(taz_id, ride_length, net_type)
+                    if dst_edge_id is None:
+                        return
+                    dst_edge = self.__sumo_net.getEdge(dst_edge_id)
+                    dst_edge_length = dst_edge.getLength()
+                    dst_pos = dst_edge_length # round(random.uniform(0.01, dst_edge_length), 2)
+                    dst_taz_id = self.__net.get_taz_id_from_edge_id(dst_edge_id, NetType.ANALYTICS_NET)
+                    if src_pos > 1 and dst_pos > 1:
+                        if self.__check_edge_allows_vehicle_type(dst_edge) and self.__net.check_connection_travel_time(src_taz_id, dst_taz_id):
+                            if self.__net.check_route(src_edge, dst_edge, src_pos, dst_pos):
+                                personality: Type[PersonalityType] = self.__assign_personality(personality_distribution)
+                                customer_id = f"customer_{self.__customer_counter}"
+                                self.__customer_counter += 1
+                                customer_attr = {
+                                    MobilityXMLEnum.ID.value: customer_id,
+                                    MobilityXMLEnum.DEPART.value: str(timestamp),
+                                    MobilityXMLEnum.DEPART_POS.value: str(src_pos)
+                                }
+                                stop_attr = {
+                                    MobilityXMLEnum.LANE.value: src_edge_lane_id,
+                                    MobilityXMLEnum.DEPART_POS.value: str(src_pos),
+                                    MobilityXMLEnum.DEPART_POS.value: str(dst_pos),
+                                    MobilityXMLEnum.DURATION.value: str(1000)  # set to huge number by default. When the ride will start the stop will be removed
+                                }
+                                self.__add_customer_to_dict(timestamp, customer_id, src_edge_id, dst_edge_id, personality, src_pos, dst_pos)
+                                person_xml: Type[ET.Element] = ET.SubElement(self.__xml_root, MobilityXMLEnum.PERSON, attrib=customer_attr)
+                                ET.SubElement(person_xml, MobilityXMLEnum.STOP.value, attrib=stop_attr)
+                                return
+                if attempts > 0:
+                    self.__generate_customer(timestamp, taz_id, net_type, attempts=(attempts - 1))
+                else:
+                    self.__discarded_customers += 1
 
     def __generate_driver(self, timestamp: float, taz_id: str, net_type: Type[NetType], src_edge_id: str = None, attempts=0):
-        taz_info: TazInfo = self.__net.get_taz_info(taz_id, net_type)
-        personality_distribution: list[[float, PersonalityType]] = taz_info[ConfigEnum.PERSONALITY_DISTRIBUTION.value][HumanEnum.DRIVERS.value]
-        personality: Type[PersonalityType] = self.__assign_personality(personality_distribution)
-        if src_edge_id is None:
-            src_edge_id = self.__net.get_random_edge_id_from_taz_id(taz_id, net_type=net_type)
-            if src_edge_id is None:
-                return
-        src_edge = self.__sumo_net.getEdge(src_edge_id)
-        src_edge_length = src_edge.getLength()
-        src_pos: float = round(src_edge_length/2, 2) # round(random.uniform(0.01, src_edge_length), 2)
-        if self.__check_edge_allows_vehicle_type(src_edge):
-            route_edge_list, cost = self.__net.generate_random_sumolib_route_in_taz(
-                taz_id,
-                src_edge_id,
-                src_pos,
-                net_type
-            )
-            if route_edge_list is not None:
-                route_edge_id_list = self.__net.convert_route_to_edge_id_list(route_edge_list)
-                dst_edge = route_edge_list[-1]
-                dst_edge_length = dst_edge.getLength()
-                route_str: str = self.__net.convert_route_to_str(route_edge_list)
-                dst_pos: float = round(dst_edge_length/2, 2) # round(random.uniform(0.01, dst_edge_length), 2)
-                if src_pos > 1 and dst_pos > 1:
-                    driver_id = f"driver_{self.__driver_counter}"
-                    self.__driver_counter += 1
-                    driver_attr = {
-                        MobilityXMLEnum.ID.value: driver_id,
-                        MobilityXMLEnum.DEPART.value: str(timestamp),
-                        MobilityXMLEnum.DEPART_POS.value: str(src_pos)
-                    }
-                    route_attr = {
-                        MobilityXMLEnum.EDGES.value: route_str
-                    }
-                    vehicle_xml: Type[ET.Element] = ET.SubElement(self.__xml_root, MobilityXMLEnum.VEHICLE, attrib=driver_attr)
-                    route_xml: Type[ET.Element] = ET.SubElement(vehicle_xml, MobilityXMLEnum.ROUTE, attrib=route_attr)
-                    self.__add_driver_to_dict(timestamp, driver_id, personality, route_edge_id_list, src_pos, dst_pos)
-                    return
-        if attempts > 0:
-            self.__generate_driver(timestamp, taz_id, net_type, attempts=attempts - 1)
-        else:
-            self.__discarded_drivers += 1
+        events = self.__scenario.check_events(timestamp, ScenarioIdentifier.MOBILITY_PLANNER)
+        for type, params in events:
+            if type == EventType.GENERATION:
+                driver_params = params[ScenarioIdentifier.TAZ.value][taz_id][ScenarioIdentifier.DRIVER.value]
+                probability_generation = driver_params[DriverIdentifiers.PROBABILITY_GENERATION.value]
+                if utils.random_choice(probability_generation):
+                    taz_info: TazInfo = self.__net.get_taz_info(taz_id, net_type)
+                    personality_distribution: list[[float, PersonalityType]] = driver_params[DriverIdentifiers.PERSONALITY_DISTRIBUTION.value]
+                    personality = self.__assign_personality(personality_distribution)
+                    if src_edge_id is None:
+                        src_edge_id = self.__net.get_random_edge_id_from_taz_id(taz_id, net_type=net_type)
+                        if src_edge_id is None:
+                            return
+                    src_edge = self.__sumo_net.getEdge(src_edge_id)
+                    src_edge_length = src_edge.getLength()
+                    src_pos: float = round(src_edge_length/2, 2) # round(random.uniform(0.01, src_edge_length), 2)
+                    if self.__check_edge_allows_vehicle_type(src_edge):
+                        route_edge_list, cost = self.__net.generate_random_sumolib_route_in_taz(
+                            taz_id,
+                            src_edge_id,
+                            src_pos,
+                            net_type
+                        )
+                        if route_edge_list is not None:
+                            route_edge_id_list = self.__net.convert_route_to_edge_id_list(route_edge_list)
+                            dst_edge = route_edge_list[-1]
+                            dst_edge_length = dst_edge.getLength()
+                            route_str: str = self.__net.convert_route_to_str(route_edge_list)
+                            dst_pos: float = round(dst_edge_length/2, 2) # round(random.uniform(0.01, dst_edge_length), 2)
+                            if src_pos > 1 and dst_pos > 1:
+                                driver_id = f"driver_{self.__driver_counter}"
+                                self.__driver_counter += 1
+                                driver_attr = {
+                                    MobilityXMLEnum.ID.value: driver_id,
+                                    MobilityXMLEnum.DEPART.value: str(timestamp),
+                                    MobilityXMLEnum.DEPART_POS.value: str(src_pos)
+                                }
+                                route_attr = {
+                                    MobilityXMLEnum.EDGES.value: route_str
+                                }
+                                vehicle_xml: Type[ET.Element] = ET.SubElement(self.__xml_root, MobilityXMLEnum.VEHICLE, attrib=driver_attr)
+                                route_xml: Type[ET.Element] = ET.SubElement(vehicle_xml, MobilityXMLEnum.ROUTE, attrib=route_attr)
+                                self.__add_driver_to_dict(timestamp, driver_id, personality, route_edge_id_list, src_pos, dst_pos)
+                                return
+                    if attempts > 0:
+                        self.__generate_driver(timestamp, taz_id, net_type, attempts=attempts - 1)
+                    else:
+                        self.__discarded_drivers += 1
 
     def __generate_timeline(self):
         np.random.seed(123)
@@ -237,12 +264,12 @@ class MobilityGenerator():
         for taz_id, taz_dict in self.__pickups_file.items():
             pickups_mean = round(taz_dict['mean'])
             pickups_std = round(taz_dict['std'])
-            customer_uniform_dist = sorted(np.random.uniform(self.__begin, self.__end, round(pickups_mean)).astype(int).tolist())
-            driver_uniform_dist = sorted(np.random.uniform(self.__begin, self.__end, round(pickups_mean/2)).astype(int).tolist())
+            proportional_pickups_mean = int(self.__end - self.__begin) * pickups_mean / 3600   # pickups_mean : 1 hour = x : (end_sim - begin_sim)
+            customer_uniform_dist = sorted(np.random.uniform(self.__begin, self.__end, round(proportional_pickups_mean)).astype(int).tolist())
+            driver_uniform_dist = sorted(np.random.uniform(self.__begin, self.__end, round(proportional_pickups_mean/2)).astype(int).tolist())
             if random.random() <= 0.7:
                 driver_uniform_dist.insert(0, random.randint(1, 11))
                 driver_uniform_dist.pop()
-            #strike_drivers = list(filter(lambda d: d < 2000, driver_uniform_dist))
             data_generator[taz_id] = {
                 "taz_id": taz_id,
                 "pickups_mean": pickups_mean,
@@ -271,3 +298,11 @@ class MobilityGenerator():
         )
         utils.export_file_from_absolute_path(output_path_timeline_events, FileFormat.JSON, timeline_events)
         return timeline_events
+
+    def __perform_scenario_event(
+            self,
+            timestamp: float,
+            type: Type[EventType],
+            params: dict          ###
+    ):
+        pass

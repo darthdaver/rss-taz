@@ -1,6 +1,8 @@
 from enum import Enum
 from src.enum.setup.City import City
 import os
+
+from src.enum.setup.Scenario import Scenario
 from src.settings.Settings import Settings
 
 env_settings = Settings()
@@ -22,6 +24,6 @@ class Paths(str, Enum):
     NET_CONFIG = f"{os.path.join(PROJECT_ROOT_PATH, 'net_config')}"
     NET_SIMULATOR = f"{os.path.join(PROJECT_ROOT_PATH, 'data', CITY, 'net', 'sim')}"
     MOBILITY_SIMULATOR = f"{os.path.join(PROJECT_ROOT_PATH, 'data', CITY, 'mobility', 'sim')}"
-    SCENARIO = f"{os.path.join(PROJECT_ROOT_PATH, 'src', 'scenario', 'planners')}"
+    SCENARIO = f"{os.path.join(PROJECT_ROOT_PATH, 'data', CITY, 'scenario')}"
     REPOS = f"{os.path.join(PROJECT_ROOT_PATH, 'src', 'repos')}"
     TIMELINE = f"{os.path.join(PROJECT_ROOT_PATH, 'data', CITY, 'mobility', 'timeline')}"

@@ -1,9 +1,13 @@
 from enum import Enum
+
+from src.enum.setup.City import City
 from src.enum.setup.Scenario import Scenario
 from src.settings.Settings import Settings
 
 env_settings = Settings()
 NET_SUMO = env_settings.NET_SUMO
+CITY = City(env_settings.CITY)
+SCENARIO = Scenario(env_settings.SCENARIO)
 
 class FileName(str, Enum):
     PICKUPS_DROPOFFS = 'pickups_dropoffs'
@@ -36,7 +40,7 @@ class FileName(str, Enum):
     PROVIDER = 'provider'
     NET_SUMO = NET_SUMO
     # SCENARIOS
-    SCENARIO = Scenario.NORMAL.value
+    SCENARIO = f"{CITY.value}_{SCENARIO.value}"
     ENV = ".env"
     ENERGY_INDEXES_100 = "energy_indexes_100"
     ENERGY_INDEXES_200 = "energy_indexes_200"

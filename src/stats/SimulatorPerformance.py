@@ -39,7 +39,7 @@ class SimulatorPerformance:
         self.__simulator_performances_content += content
 
     def export_simulator_performances(self):
-        output_absolute_path = utils.generate_sim_out_absolute_path_to_file(
+        output_absolute_path = utils.generate_absolute_path_to_file(
             Paths.SIM_OUTPUT,
             FileName.SIMULATOR_PERFORMANCES,
             FileFormat.CSV,

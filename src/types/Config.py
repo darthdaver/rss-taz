@@ -21,10 +21,10 @@ class ProviderSetup(TypedDict):
 class DriverSetup(TypedDict):
     move_distribution: Dict[str,list[[float, float, float]]]
     personality_distribution: list[[float, str]]
-    driver_acceptance_distribution: Dict[str, list[float, float, float]]
+    acceptance_distribution: Dict[str, list[float, float, float]]
     stop_work_distribution: Dict[str, float]
 
 
 class CustomerSetup(TypedDict):
     personality_distribution: list[[float, str]]
-    customer_acceptance_distribution: Dict[str, list[float, float, float]]
+    acceptance_distribution: Dict[str, list[float, float, float]]

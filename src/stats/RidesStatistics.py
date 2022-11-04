@@ -25,7 +25,7 @@ class RidesStatistics:
         }
 
     def export_rides_stats_info(self):
-        output_absolute_path = utils.generate_sim_out_absolute_path_to_file(
+        output_absolute_path = utils.generate_absolute_path_to_file(
             Paths.SIM_OUTPUT,
             FileName.RIDES_STATS,
             FileFormat.JSON,

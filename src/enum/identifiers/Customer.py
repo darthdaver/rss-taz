@@ -9,4 +9,4 @@ class Customer(str, Enum):
     SRC_POS = "src_pos"
     DST_EDGE_ID = "dst_edge_id"
     DST_POS = "dst_pos"
-    CUSTOMER_ACCEPTANCE_DISTRIBUTION = "customer_acceptance_distribution"
+    ACCEPTANCE_DISTRIBUTION = "acceptance_distribution"

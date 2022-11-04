@@ -31,7 +31,7 @@ class SpecificIndicators:
         self.__rides_stats[int(timestamp)].append(stats)
 
     def export_specific_indicators(self):
-        output_absolute_path = utils.generate_sim_out_absolute_path_to_file(
+        output_absolute_path = utils.generate_absolute_path_to_file(
             Paths.SIM_OUTPUT,
             FileName.SPECIFIC_INDICATORS,
             FileFormat.JSON,

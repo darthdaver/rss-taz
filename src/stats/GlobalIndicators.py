@@ -178,7 +178,7 @@ class GlobalIndicators:
         self.__on_road_customers[int(timestamp)][taz_id] = num
 
     def export_global_indicators(self):
-        output_absolute_path = utils.generate_sim_out_absolute_path_to_file(
+        output_absolute_path = utils.generate_absolute_path_to_file(
             Paths.SIM_OUTPUT,
             FileName.GLOBAL_INDICATORS,
             FileFormat.JSON,

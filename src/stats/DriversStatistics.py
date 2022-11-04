@@ -33,7 +33,7 @@ class DriversStatistics:
         }
 
     def export_drivers_stats_info(self):
-        output_absolute_path = utils.generate_sim_out_absolute_path_to_file(
+        output_absolute_path = utils.generate_absolute_path_to_file(
             Paths.SIM_OUTPUT,
             FileName.DRIVERS_STATS,
             FileFormat.JSON,

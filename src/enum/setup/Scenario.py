@@ -5,3 +5,4 @@ class Scenario(str, Enum):
     GREEDY = "greedy"
     DRIVER_STRIKE = "driver_strike"
     LONG_RIDES = "long_rides"
+    FLASH_MOB = "flash_mob"

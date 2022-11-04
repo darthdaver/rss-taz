@@ -23,6 +23,7 @@ class NetParser():
         self.__sumo_net = sumolib.net.readNet(net_path, withInternal=True)
         self.__customer_setup = utils.read_file_from_absolute_path_to_file(FileSetup.CUSTOMER.value, FileFormat.JSON)
         self.__driver_setup = utils.read_file_from_absolute_path_to_file(FileSetup.DRIVER.value, FileFormat.JSON)
+        self.__ride_setup = utils.read_file_from_absolute_path_to_file(FileSetup.RIDE.value, FileFormat.JSON)
         self.__city = city
         self.__net = { str(n_t.value): { NetIdentifier.TAZ.value: {}, NetIdentifier.EDGES.value: {}} for d, n_t in net_datasets_types }
         self.__edge_id_set = set([])
@@ -165,10 +166,6 @@ class NetParser():
             edges = taz["@edges"].split(" ")
             taz_dict[taz_id]: Type[TazInfo] = {
                 "id": taz_id,
-                Config.PERSONALITY_DISTRIBUTION.value: {
-                    Human.CUSTOMERS.value: list(map(lambda p: [p[0], PersonalityType(p[1])], self.__customer_setup[Config.PERSONALITY_DISTRIBUTION.value])),
-                    Human.DRIVERS.value: list(map(lambda p: [p[0], PersonalityType(p[1])], self.__driver_setup[Config.PERSONALITY_DISTRIBUTION.value]))
-                },
                 Provider.BALANCES.value: [1],
                 Provider.SURGE_MULTIPLIERS.value: [1],
                 Ride.STARTED.value: 0,
@@ -179,7 +176,9 @@ class NetParser():
                 Ride.NOT_SERVED.value: 0,
                 NetIdentifier.EDGES.value: [],
                 NetIdentifier.DISTANCE.value: centroids[taz_id],
-                NetIdentifier.DRIVERS.value: {}
+                NetIdentifier.CUSTOMER.value: self.__customer_setup,
+                NetIdentifier.DRIVER.value: self.__driver_setup,
+                NetIdentifier.RIDE.value: self.__ride_setup
             }
             for edge_id in edges:
                 if edge_id in self.__edge_id_set:
