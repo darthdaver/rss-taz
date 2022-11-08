@@ -63,8 +63,6 @@ class Simulator:
         self.__customers = {}
         self.__drivers_by_state = {k.value: [] for k in DriverState}
         self.__customers_by_state = {k.value: [] for k in CustomerState}
-        self.__temp_drivers_gen = 0
-        self.__temp_customers_gen = 0
         self.__timeline_generation = utils.read_setup(FileSetup.MOBILITY_SIMULATOR.value)
         self.__scenario = Scenario(utils.read_setup(FileSetup.SCENARIO.value))
         self.__statistics = Statistics(
@@ -1031,16 +1029,9 @@ class Simulator:
         self.__drivers_by_state[DriverState.RESPONDING.value].append(driver_id)
         return driver.receive_request()
 
-    def temp(
-            self,
-            driver_id,
-            route,
-            stop_pos
-    ):
-        self.__set_driver_route(driver_id, route, stop_pos)
-
     def __set_driver_route(
             self,
+            timestamp: float,
             driver_id: str,
             route: Type[Route],
             stop_pos: float = -1,
@@ -1049,9 +1040,13 @@ class Simulator:
     ):
 
         driver = self.__drivers[driver_id]
+        driver_info = driver.get_info()
         dst_edge_id = route.get_destination_edge_id()
         dst_edge = self.__sumo_net.getEdge(dst_edge_id)
-        driver_pos = traci.vehicle.getLanePosition(driver_id)
+        driver_current_pos = traci.vehicle.getLanePosition(driver_id)
+        driver_dst_pos = driver_info[DriverIdentifiers.ROUTE.value][RouteIdentifier.DST_POS.value]
+        driver_current_route = traci.vehicle.getRoute(driver_id)
+        driver_current_route_idx = traci.vehicle.getRouteIndex(driver_id)
         if stop_pos == -1:
             dst_edge_length = dst_edge.getLength()
             stop_pos = dst_edge_length # random.random() * dst_edge_length
@@ -1066,6 +1061,18 @@ class Simulator:
             traci.vehicle.setRouteID(driver_id, route_id)
             traci.vehicle.setStop(driver_id, dst_edge_id, stop_pos, duration=duration, flags=flags)
         except:
+            old_route_edge_id_list = driver_current_route[driver_current_route_idx:]
+            old_route = self.__net.generate_sim_route_from_edge_id_list(
+                timestamp,
+                old_route_edge_id_list,
+                driver_current_pos,
+                driver_dst_pos
+            )
+            driver.set_route(old_route)
+            traci.vehicle.setRoute(driver_id, old_route_edge_id_list)
+            print("ccccc")
+            print(old_route_edge_id_list)
+            print(driver_id)
             raise Exception(f"Simulation.__set_driver_route - Impossible to set driver route for {driver_id}")
         driver.set_route_destination_position(stop_pos)
 
@@ -1083,6 +1090,7 @@ class Simulator:
             #print(f"Pickup route for driver {driver_info['id']} and customer {customer_id}.")
             try:
                 self.__set_driver_route(
+                    timestamp,
                     driver_id,
                     route,
                     dst_pos,
@@ -1115,6 +1123,7 @@ class Simulator:
             driver_info = driver.get_info()
             try:
                 self.__set_driver_route(
+                    timestamp,
                     driver_id,
                     route,
                     stop_pos=arrival_dst_pos
@@ -1124,6 +1133,7 @@ class Simulator:
         elif driver_info[DriverIdentifiers.DRIVER_STATE.value] in [DriverState.ON_ROAD, DriverState.IDLE, DriverState.MOVING]:
             try:
                 self.__set_driver_route(
+                    timestamp,
                     driver_id,
                     route
                 )

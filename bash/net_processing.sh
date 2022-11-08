@@ -25,5 +25,5 @@ echo "Processing districts edge - uber"
 python3 net_parser.py -i ./src/setup/config/sf_net_parser.json -c city -n ./net_config/sf.net.xml
 python3 scenario_generator.py
 python3 mobility_generator.py -b 0 -e 5000 -n ./net_config/sf.net.xml
-mkdir -p "$PWD/data/city/mobility/sim/xml"
+mkdir -p "$PWD/data/sf/mobility/sim/xml"
 ./sumo_tools/duarouter -n ./net_config/sf.net.xml -r ./data/sf/mobility/sfcta/xml/sf_sfcta_mobility.xml --ignore-errors=True --repair=True -o ./data/sf/mobility/sim/xml/mobility_simulator.rou.xml
