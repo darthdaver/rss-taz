@@ -236,7 +236,6 @@ class MobilityGenerator():
         if src_edge_id is None:
             src_edge_id = self.__net.get_random_edge_id_from_taz_id(taz_id, net_type=net_type)
             if src_edge_id is None:
-                print("aaaaa")
                 self.__discarded_customers += 1
                 return
         src_edge = self.__sumo_net.getEdge(src_edge_id)
@@ -336,64 +335,64 @@ class MobilityGenerator():
         data_generator = {}
         timeline_events = {k: {"customers": [], "drivers": []} for k in range(self.__begin, self.__end + 1)}
         for taz_id, taz_dict in self.__pickups_file.items():
-            pickups_mean = round(taz_dict['mean'])
-            pickups_std = round(taz_dict['std'])
-            proportional_pickups_mean = int(self.__end - self.__begin) * pickups_mean / 3600   # pickups_mean : 1 hour = x : (end_sim - begin_sim)
-            customer_uniform_dist = np.random.uniform(self.__begin, self.__end, round(proportional_pickups_mean)).astype(int).tolist()
-            driver_uniform_dist = np.random.uniform(self.__begin, self.__end, round(proportional_pickups_mean/2)).astype(int).tolist()
-            if random.random() <= 0.7:
-                driver_uniform_dist.insert(0, random.randint(1, 11))
-                driver_uniform_dist.pop()
-            #print(len(customer_uniform_dist))
-            enriched_customer_uniform_dist = []
-            enriched_driver_uniform_dist = []
-            for timestamp in range(int(self.__begin), int(self.__end)):
-                scenario_events = self.__scenario.check_events(
-                    timestamp,
-                    ScenarioIdentifier.MOBILITY_PLANNER
-                )
-                for type, params in scenario_events:
-                    self.__perform_scenario_event(
+            if self.__net.is_taz_id_in_net(taz_id, NetType.MOBILITY_NET):
+                pickups_mean = round(taz_dict['mean'])
+                pickups_std = round(taz_dict['std'])
+                proportional_pickups_mean = int(self.__end - self.__begin) * pickups_mean / 3600   # pickups_mean : 1 hour = x : (end_sim - begin_sim)
+                customer_uniform_dist = np.random.uniform(self.__begin, self.__end, round(proportional_pickups_mean)).astype(int).tolist()
+                driver_uniform_dist = np.random.uniform(self.__begin, self.__end, round(proportional_pickups_mean/2)).astype(int).tolist()
+                if random.random() <= 0.7:
+                    driver_uniform_dist.insert(0, random.randint(1, 11))
+                    driver_uniform_dist.pop()
+                #print(len(customer_uniform_dist))
+                enriched_customer_uniform_dist = []
+                enriched_driver_uniform_dist = []
+                for timestamp in range(int(self.__begin), int(self.__end)):
+                    scenario_events = self.__scenario.check_events(
                         timestamp,
-                        taz_id,
-                        customer_uniform_dist,
-                        driver_uniform_dist,
-                        type,
-                        params,
+                        ScenarioIdentifier.MOBILITY_PLANNER
                     )
-                for occurrence in range(customer_uniform_dist.count(timestamp)):
-                    enriched_customer_uniform_dist.append(
-                        self.__enrich_customer_information(
-                            taz_id,
+                    for type, params in scenario_events:
+                        self.__perform_scenario_event(
                             timestamp,
-                            customer_uniform_dist
-                        )
-                    )
-                for occurrence in range(driver_uniform_dist.count(timestamp)):
-                    enriched_driver_uniform_dist.append(
-                        self.__enrich_driver_information(
                             taz_id,
-                            timestamp,
-                            driver_uniform_dist
+                            customer_uniform_dist,
+                            driver_uniform_dist,
+                            type,
+                            params,
                         )
-                    )
-            print(len(enriched_customer_uniform_dist))
+                    for occurrence in range(customer_uniform_dist.count(timestamp)):
+                        enriched_customer_uniform_dist.append(
+                            self.__enrich_customer_information(
+                                taz_id,
+                                timestamp,
+                                customer_uniform_dist
+                            )
+                        )
+                    for occurrence in range(driver_uniform_dist.count(timestamp)):
+                        enriched_driver_uniform_dist.append(
+                            self.__enrich_driver_information(
+                                taz_id,
+                                timestamp,
+                                driver_uniform_dist
+                            )
+                        )
 
-            data_generator[taz_id] = {
-                "taz_id": taz_id,
-                "pickups_mean": pickups_mean,
-                "pickups_std": pickups_std,
-                "customer_dist": enriched_customer_uniform_dist,
-                "driver_dist": enriched_driver_uniform_dist
-            }
-            for c_event in enriched_customer_uniform_dist:
-                probability_generation = c_event[CustomerIdentifiers.PROBABILITY_GENERATION.value]
-                if utils.random_choice(probability_generation):
-                    timeline_events[int(c_event[CustomerIdentifiers.TIMESTAMP.value])]["customers"].append(c_event)
-            for d_event in enriched_driver_uniform_dist:
-                probability_generation = d_event[DriverIdentifiers.PROBABILITY_GENERATION.value]
-                if utils.random_choice(probability_generation):
-                    timeline_events[int(d_event[DriverIdentifiers.TIMESTAMP.value])]["drivers"].append(d_event)
+                data_generator[taz_id] = {
+                    "taz_id": taz_id,
+                    "pickups_mean": pickups_mean,
+                    "pickups_std": pickups_std,
+                    "customer_dist": enriched_customer_uniform_dist,
+                    "driver_dist": enriched_driver_uniform_dist
+                }
+                for c_event in enriched_customer_uniform_dist:
+                    probability_generation = c_event[CustomerIdentifiers.PROBABILITY_GENERATION.value]
+                    if utils.random_choice(probability_generation):
+                        timeline_events[int(c_event[CustomerIdentifiers.TIMESTAMP.value])]["customers"].append(c_event)
+                for d_event in enriched_driver_uniform_dist:
+                    probability_generation = d_event[DriverIdentifiers.PROBABILITY_GENERATION.value]
+                    if utils.random_choice(probability_generation):
+                        timeline_events[int(d_event[DriverIdentifiers.TIMESTAMP.value])]["drivers"].append(d_event)
         output_path_data_generator = utils.generate_absolute_path_to_file(
             Paths.MOBILITY,
             FileName.TAZ_TIMELINE_DICT,

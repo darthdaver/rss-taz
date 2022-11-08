@@ -1,0 +1,50 @@
+{
+    "name": "normal",
+    "mobility_planner": [
+        {
+            "begin": 2500.0,
+            "end": 2500.0,
+            "type": "SUDDEN_REQUESTS",
+            "params": {
+                "taz": {
+                    "94114": {
+                        "id": "94114",
+                        "requests": 100,
+                        "interval": 500
+                    },
+                    "94117": {
+                        "id": "94117",
+                        "requests": 80,
+                        "interval": 500
+                    },
+                    "94131": {
+                        "id": "94131",
+                        "requests": 60,
+                        "interval": 800
+                    },
+                    "94110": {
+                        "id": "94110",
+                        "requests": 40,
+                        "interval": 500
+                    },
+                    "94103": {
+                        "id": "94103",
+                        "requests": 40,
+                        "interval": 500
+                    },
+                    "94102": {
+                        "id": "94102",
+                        "requests": 40,
+                        "interval": 500
+                    },
+                    "94115": {
+                        "id": "94115",
+                        "requests": 40,
+                        "interval": 500
+                    }
+                }
+            }
+        }
+    ],
+    "simulation_planner": []
+}

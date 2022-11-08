@@ -1,0 +1,33 @@
+{
+   "mobility_intervals":[
+      [
+         3000.0,
+         5000.0
+      ]
+   ],
+   "mobility_tazs":[
+
+   ],
+   "driver":{
+      "probability_generation":1,
+      "personality_distribution":[
+         [
+            0.35,
+            "hurry"
+         ],
+         [
+            0.35,
+            "greedy"
+         ],
+         [
+            0.35,
+            "normal"
+         ]
+      ],
+      "increment":{
+         "hurry":-0.0002,
+         "greedy":0.0003,
+         "normal":-0.0002
+      }
+   }
+}

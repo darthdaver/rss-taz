@@ -13,14 +13,14 @@ env_settings = Settings()
 CITY = City(env_settings.CITY)
 DATASET_PICKUPS = Dataset(env_settings.DATASET_PICKUPS)
 DATASET_TRAVEL_TIMES = Dataset(env_settings.DATASET_TRAVEL_TIMES)
-SCENARIO = Scenario(env_settings.SCENARIO)
+SCENARIO_SETTING = Scenario(env_settings.SCENARIO)
 
 class FileSetup(str, Enum):
     CUSTOMER = f"{os.path.join(Paths.SETUP_CONFIG, FileName.CUSTOMER)}.{FileFormat.JSON}"
     DRIVER = f"{os.path.join(Paths.SETUP_CONFIG, FileName.DRIVER)}.{FileFormat.JSON}"
     SIMULATOR = f"{os.path.join(Paths.SETUP_CONFIG, FileName.SIMULATOR)}.{FileFormat.JSON}"
     PROVIDER = f"{os.path.join(Paths.SETUP_CONFIG, FileName.PROVIDER)}.{FileFormat.JSON}"
-    SCENARIO = f"{os.path.join(Paths.SCENARIO, SCENARIO, FileFormat.JSON, FileName.SCENARIO)}.{FileFormat.JSON}"
+    SCENARIO = f"{os.path.join(Paths.SCENARIO, SCENARIO_SETTING, FileFormat.JSON, FileName.SCENARIO)}.{FileFormat.JSON}"
     #NET = f"{os.path.join(Paths.REPOS, 'city-mapdict-sf_n_o_minimal.json')}"
     #TAZ_EDGES = f"{os.path.join('data', 'sf_n_o_minimal_mov_edges_dict.json')}"
     NET_SUMO = f"{os.path.join(Paths.NET_CONFIG, FileName.NET_SUMO)}.{FileFormat.XML}"
@@ -35,3 +35,4 @@ class FileSetup(str, Enum):
     TRAVEL_TIMES_MISSING_COUPLES = f"{os.path.join(Paths.MOBILITY, DATASET_TRAVEL_TIMES.value, FileFormat.JSON, CITY.value + '_' + DATASET_TRAVEL_TIMES.value + '_' + FileName.TRAVEL_TIME_MISSING_COUPLES.value)}.{FileFormat.JSON}"
     ENV = f"{os.path.join(Paths.PROJECT_ROOT_PATH, FileName.ENV)}"
     TRACI_PROVA_PROCESSES = f"{os.path.join(Paths.PROJECT_ROOT_PATH, 'prova_processes.txt')}"
+    SCENARIO_CONFIG = f"{os.path.join(Paths.SCENARIO, SCENARIO_SETTING, FileFormat.JSON, FileName.SCENARIO_CONFIG)}.{FileFormat.JSON}"

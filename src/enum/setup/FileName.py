@@ -7,7 +7,7 @@ from src.settings.Settings import Settings
 env_settings = Settings()
 NET_SUMO = env_settings.NET_SUMO
 CITY = City(env_settings.CITY)
-SCENARIO = Scenario(env_settings.SCENARIO)
+SCENARIO_SETTING = Scenario(env_settings.SCENARIO)
 
 class FileName(str, Enum):
     PICKUPS_DROPOFFS = 'pickups_dropoffs'
@@ -40,7 +40,9 @@ class FileName(str, Enum):
     PROVIDER = 'provider'
     NET_SUMO = NET_SUMO
     # SCENARIOS
-    SCENARIO = f"{CITY.value}_{SCENARIO.value}"
+    SCENARIO = f"{CITY.value}_{SCENARIO_SETTING.value}_planner"
+    SCENARIO_CONFIG = f"{CITY.value}_{SCENARIO_SETTING.value}_config"
+    SCENARIO_PLANNER = f"planner"
     ENV = ".env"
     ENERGY_INDEXES_100 = "energy_indexes_100"
     ENERGY_INDEXES_200 = "energy_indexes_200"

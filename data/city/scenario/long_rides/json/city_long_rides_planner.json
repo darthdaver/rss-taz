@@ -1,0 +1,131 @@
+{
+    "name": "normal",
+    "mobility_planner": [
+        {
+            "begin": 700.0,
+            "end": 1700.0,
+            "type": "RIDE_LENGTH",
+            "params": {
+                "taz": {
+                    "po_0": {
+                        "id": "po_0",
+                        "ride": {
+                            "route_length_distribution": [
+                                [
+                                    0.3,
+                                    "short"
+                                ],
+                                [
+                                    0.7,
+                                    "normal"
+                                ],
+                                [
+                                    0.9,
+                                    "long"
+                                ],
+                                [
+                                    1,
+                                    "extreme"
+                                ]
+                            ],
+                            "increment": {
+                                "short": -0.0002,
+                                "normal": -0.0004,
+                                "long": -0.0002,
+                                "extreme": 0
+                            }
+                        }
+                    },
+                    "po_1": {
+                        "id": "po_1",
+                        "ride": {
+                            "route_length_distribution": [
+                                [
+                                    0.3,
+                                    "short"
+                                ],
+                                [
+                                    0.7,
+                                    "normal"
+                                ],
+                                [
+                                    0.9,
+                                    "long"
+                                ],
+                                [
+                                    1,
+                                    "extreme"
+                                ]
+                            ],
+                            "increment": {
+                                "short": -0.0002,
+                                "normal": -0.0004,
+                                "long": -0.0002,
+                                "extreme": 0
+                            }
+                        }
+                    },
+                    "po_2": {
+                        "id": "po_2",
+                        "ride": {
+                            "route_length_distribution": [
+                                [
+                                    0.3,
+                                    "short"
+                                ],
+                                [
+                                    0.7,
+                                    "normal"
+                                ],
+                                [
+                                    0.9,
+                                    "long"
+                                ],
+                                [
+                                    1,
+                                    "extreme"
+                                ]
+                            ],
+                            "increment": {
+                                "short": -0.0002,
+                                "normal": -0.0004,
+                                "long": -0.0002,
+                                "extreme": 0
+                            }
+                        }
+                    },
+                    "po_3": {
+                        "id": "po_3",
+                        "ride": {
+                            "route_length_distribution": [
+                                [
+                                    0.3,
+                                    "short"
+                                ],
+                                [
+                                    0.7,
+                                    "normal"
+                                ],
+                                [
+                                    0.9,
+                                    "long"
+                                ],
+                                [
+                                    1,
+                                    "extreme"
+                                ]
+                            ],
+                            "increment": {
+                                "short": -0.0002,
+                                "normal": -0.0004,
+                                "long": -0.0002,
+                                "extreme": 0
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    ],
+    "simulation_planner": []
+}

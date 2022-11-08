@@ -1,0 +1,32 @@
+{
+   "mobility_intervals":[
+      [
+         2500.0,
+         2500.0
+      ]
+   ],
+   "mobility_tazs":[
+      [
+         [
+            "p_0",
+            [
+               40,
+               300
+            ]
+         ],
+         [
+            "p_1",
+            [
+               30,
+               300
+            ]
+         ]
+      ]
+   ],
+   "simulation_intervals":[
+
+   ],
+   "simulation_tazs":[
+
+   ]
+}

@@ -20,6 +20,14 @@ class Scenario(str, Enum):
     INTERVAL = "interval"
     REQUESTS = "requests"
     INCREMENT = "increment"
-    UNIFORM_DITRIBUTION = "uniform_distribution"
+    UNIFORM_DISTRIBUTION = "uniform_distribution"
+    CITY = "city"
+    MOBILITY_INTERVALS = "mobility_intervals"
+    MOBILITY_TAZS = "mobility_tazs"
+    SIMULATION_INTERVALS = "simulation_intervals"
+    SIMULATION_TAZS = "simulation_tazs"
+    MOBILITY_DRIVER = "mobility_driver"
+    SIMULATION_DRIVER = "simulation_driver"
+    SPEED_TYPE = "speed_type"
 
 

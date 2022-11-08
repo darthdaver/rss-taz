@@ -1,0 +1,45 @@
+{
+  "mobility_intervals": [
+    [
+      1000.0,
+      2000.0
+    ]
+  ],
+  "mobility_tazs": [],
+  "simulation_intervals": [
+    [
+      1000.0,
+      1000.0
+    ]
+  ],
+  "simulation_tazs": [],
+  "mobility_driver":{
+      "probability_generation":0.2,
+      "personality_distribution":[
+         [
+            1,
+            "hurry"
+         ],
+         [
+            1,
+            "greedy"
+         ],
+         [
+            1,
+            "normal"
+         ]
+      ],
+      "increment":{
+         "hurry":0,
+         "greedy":0,
+         "normal":0
+      }
+   },
+  "simulation_driver": {
+    "stop_work_distribution": {
+      "hurry": 0.00002,
+      "greedy": 0.0002,
+      "normal": 0.0001
+    }
+  }
+}

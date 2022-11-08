@@ -1,0 +1,115 @@
+{
+    "name": "normal",
+    "mobility_planner": [
+        {
+            "begin": 1000.0,
+            "end": 2000.0,
+            "type": "DRIVER_GENERATION",
+            "params": {
+                "taz": {
+                    "po_0": {
+                        "id": "po_0",
+                        "driver": {
+                            "probability_generation": 1,
+                            "personality_distribution": [
+                                [
+                                    0.35,
+                                    "hurry"
+                                ],
+                                [
+                                    0.35,
+                                    "greedy"
+                                ],
+                                [
+                                    0.35,
+                                    "normal"
+                                ]
+                            ],
+                            "increment": {
+                                "hurry": -0.0002,
+                                "greedy": 0.0003,
+                                "normal": -0.0002
+                            }
+                        }
+                    },
+                    "po_1": {
+                        "id": "po_1",
+                        "driver": {
+                            "probability_generation": 1,
+                            "personality_distribution": [
+                                [
+                                    0.35,
+                                    "hurry"
+                                ],
+                                [
+                                    0.35,
+                                    "greedy"
+                                ],
+                                [
+                                    0.35,
+                                    "normal"
+                                ]
+                            ],
+                            "increment": {
+                                "hurry": -0.0002,
+                                "greedy": 0.0003,
+                                "normal": -0.0002
+                            }
+                        }
+                    },
+                    "po_2": {
+                        "id": "po_2",
+                        "driver": {
+                            "probability_generation": 1,
+                            "personality_distribution": [
+                                [
+                                    0.35,
+                                    "hurry"
+                                ],
+                                [
+                                    0.35,
+                                    "greedy"
+                                ],
+                                [
+                                    0.35,
+                                    "normal"
+                                ]
+                            ],
+                            "increment": {
+                                "hurry": -0.0002,
+                                "greedy": 0.0003,
+                                "normal": -0.0002
+                            }
+                        }
+                    },
+                    "po_3": {
+                        "id": "po_3",
+                        "driver": {
+                            "probability_generation": 1,
+                            "personality_distribution": [
+                                [
+                                    0.35,
+                                    "hurry"
+                                ],
+                                [
+                                    0.35,
+                                    "greedy"
+                                ],
+                                [
+                                    0.35,
+                                    "normal"
+                                ]
+                            ],
+                            "increment": {
+                                "hurry": -0.0002,
+                                "greedy": 0.0003,
+                                "normal": -0.0002
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    ],
+    "simulation_planner": []
+}
