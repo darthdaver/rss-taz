@@ -1,6 +1,5 @@
 __pycache__
 *.pyc
-output*
 .*
 !/.gitignore
 
@@ -10,11 +9,18 @@ output*
 
 #data
 **/repos
-data
-!data/city/net/taz/boundary/*
-!data/city/net/taz/centroids/*
+data/*
+!data/city
+data/city/mobility
+data/city/net/edge
+data/city/net/merge
+data/city/net/sim
+data/city/net/taz/*
+!data/city/net/taz/boundary/test/xml
+!data/city/net/taz/centroids/test/json
+data/city/output
 
-
+output
 logfile.txt
 traci_logfile.txt
 

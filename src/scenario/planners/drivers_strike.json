@@ -57,15 +57,15 @@
             "personality_distribution":[
                [
                   1,
-                  "HURRY"
+                  "hurry"
                ],
                [
                   1,
-                  "GREEDY"
+                  "greedy"
                ],
                [
                   1,
-                  "NORMAL"
+                  "normal"
                ]
             ]
          },
@@ -74,15 +74,15 @@
                "personality_distribution":[
                   [
                      0.35,
-                     "HURRY"
+                     "hurry"
                   ],
                   [
                      0.5,
-                     "GREEDY"
+                     "greedy"
                   ],
                   [
                      1,
-                     "NORMAL"
+                     "normal"
                   ]
                ]
          }

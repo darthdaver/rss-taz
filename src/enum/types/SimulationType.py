@@ -1,6 +1,6 @@
 from enum import Enum
 
 class SimulationType(str, Enum):
-    NORMAL = "NORMAL"
+    NORMAL = "normal"
     PEAK = "PEAK"
-    GREEDY = "GREEDY"
+    GREEDY = "greedy"

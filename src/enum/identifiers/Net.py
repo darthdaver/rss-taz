@@ -26,3 +26,4 @@ class Net(str, Enum):
     RIDE = "ride"
     CUSTOMER = "customer"
     DRIVER = "driver"
+    INCREMENT = "increment"

@@ -18,3 +18,4 @@ class Driver(str, Enum):
     MOVE_DIFF_PROBABILITIES = "move_diff_probabilities"
     PROBABILITY_GENERATION = "probability_generation"
     PERSONALITY_DISTRIBUTION = "personality_distribution"
+    INCREMENT = "increment"

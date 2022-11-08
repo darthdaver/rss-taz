@@ -1,11 +1,12 @@
 from src.utils import utils
 from src.enum.setup.FileSetup import FileSetup
 from src.enum.setup.FileFormat import FileFormat
-from src.enum.identifiers.Ride import Ride as RideType
+from src.enum.identifiers.Ride import Ride as RideIdentifier
 from src.enum.identifiers.Net import Net as NetIdentifiers
 from src.enum.identifiers.Config import Config as ConfigIdentifier
 from src.enum.identifiers.Driver import Driver as DriverIdentifier
 from src.enum.identifiers.Provider import Provider as ProviderIdentifier
+from src.enum.identifiers.Human import Human as HumanIdentifier
 from src.enum.identifiers.Route import Route as RouteIdentifier
 from src.enum.identifiers.Ride import Ride as RideIdentifier
 from src.types.Driver import DriverInfo, DriverState
@@ -93,7 +94,7 @@ class Net:
     def generate_destination_edge(
             self,
             src_taz_id: str,
-            ride_length: RideType,
+            ride_length: Type[RideIdentifier],
             net_type: NetType = NetType.BOUNDARY_NET
     ) -> str:
         net = self.__select_net(net_type)
@@ -453,7 +454,31 @@ class Net:
         net = self.__select_net(net_type)
         assert agent_type in [HumanType.DRIVER, HumanType.CUSTOMER], f"Map.update_personality_distribution - unknown label {agent_type}"
         taz = net[NetIdentifiers.TAZ.value][taz_id]
-        taz[agent_type.value.lower()][ConfigIdentifier.PERSONALITY_DISTRIBUTION.value] = personality_distribution
+        taz[agent_type.value.lower()][HumanIdentifier.PERSONALITY_DISTRIBUTION.value] = personality_distribution
+
+    def update_probability_generation_in_taz(
+            self,
+            taz_id: str,
+            probability_generation: float,
+            agent_type: Type[HumanType],
+            net_type: Type[NetType] = NetType.BOUNDARY_NET
+    ):
+        net = self.__select_net(net_type)
+        assert agent_type in [HumanType.DRIVER,
+                              HumanType.CUSTOMER], f"Map.update_personality_distribution - unknown label {agent_type}"
+        taz = net[NetIdentifiers.TAZ.value][taz_id]
+        taz[agent_type.value.lower()][HumanIdentifier.PROBABILITY_GENERATION.value] = probability_generation
+
+    def update_route_length_distribution_in_taz(
+            self,
+            taz_id: str,
+            route_length_distribution: list[[float, str]],
+            net_type: Type[NetType] = NetType.BOUNDARY_NET
+    ):
+        net = self.__select_net(net_type)
+        taz = net[NetIdentifiers.TAZ.value][taz_id]
+        taz[ConfigIdentifier.RIDE.value][RideIdentifier.ROUTE_LENGTH_DISTRIBUTION.value] = route_length_distribution
+
 
     def update_stop_work_distribution_in_taz(
             self,
@@ -465,6 +490,16 @@ class Net:
         taz = net[NetIdentifiers.TAZ.value][taz_id]
         taz[ConfigIdentifier.DRIVER.value][DriverIdentifier.STOP_WORK_DISTRIBUTION.value] = stop_work_distribution
 
+    def update_taz_surge_multiplier(
+            self,
+            taz_id: str,
+            surge_multiplier: float,
+            net_type: Type[NetType] = NetType.BOUNDARY_NET
+    ):
+        net = self.__select_net(net_type)
+        taz = net[NetIdentifiers.TAZ.value][taz_id]
+        taz[ProviderIdentifier.SURGE_MULTIPLIERS.value].insert(0, surge_multiplier)
+
     def update_taz_balance(
             self,
             taz_id: str,
@@ -475,12 +510,3 @@ class Net:
         taz = net[NetIdentifiers.TAZ.value][taz_id]
         taz[ProviderIdentifier.BALANCES.value].insert(0, balance)
 
-    def update_taz_surge_multiplier(
-            self,
-            taz_id: str,
-            surge_multiplier: float,
-            net_type: Type[NetType] = NetType.BOUNDARY_NET
-    ):
-        net = self.__select_net(net_type)
-        taz = net[NetIdentifiers.TAZ.value][taz_id]
-        taz[ProviderIdentifier.SURGE_MULTIPLIERS.value].insert(0, surge_multiplier)

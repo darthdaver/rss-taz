@@ -1,0 +1,165 @@
+{
+   "name":"drivers_strike",
+   "mobility_planner": [
+      {
+         "begin":1000.0,
+         "end":2000.0,
+         "type":"DRIVER_GENERATION",
+         "params":{
+            "taz":{
+               "po_0": {
+                  "id":"po_0",
+                  "driver":{
+                     "probability_generation":0.2,
+                     "personality_distribution":[
+                        [
+                           1,
+                           "hurry"
+                        ],
+                        [
+                           1,
+                           "greedy"
+                        ],
+                        [
+                           1,
+                           "normal"
+                        ]
+                     ]
+                  },
+                  "increment": {
+                     "hurry": 0.0,
+                     "greedy": 0.0,
+                     "normal": 0.0
+                  }
+               },
+               "po_1":{
+                  "id":"po_1",
+                  "driver":{
+                     "probability_generation":0.2,
+                     "personality_distribution":[
+                        [
+                           1,
+                           "hurry"
+                        ],
+                        [
+                           1,
+                           "greedy"
+                        ],
+                        [
+                           1,
+                           "normal"
+                        ]
+                     ]
+                  },
+                  "increment": {
+                     "hurry": 0.0,
+                     "greedy": 0.0,
+                     "normal": 0.0
+                  }
+               },
+               "po_2": {
+                  "id":"po_2",
+                  "driver":{
+                     "probability_generation":0.2,
+                     "personality_distribution":[
+                        [
+                           1,
+                           "hurry"
+                        ],
+                        [
+                           1,
+                           "greedy"
+                        ],
+                        [
+                           1,
+                           "normal"
+                        ]
+                     ]
+                  },
+                  "increment": {
+                     "hurry": 0.0,
+                     "greedy": 0.0,
+                     "normal": 0.0
+                  }
+               },
+               "po_3": {
+                  "id": "po_3",
+                  "driver":{
+                     "probability_generation":0.2,
+                     "personality_distribution":[
+                        [
+                           1,
+                           "hurry"
+                        ],
+                        [
+                           1,
+                           "greedy"
+                        ],
+                        [
+                           1,
+                           "normal"
+                        ]
+                     ]
+                  },
+                  "increment": {
+                     "hurry": 0.0,
+                     "greedy": 0.0,
+                     "normal": 0.0
+                  }
+               }
+            }
+         }
+      }
+   ],
+   "simulation_planner":[
+      {
+         "begin":1000.0,
+         "end":1000.0,
+         "type":"DRIVER_STOP_WORK",
+         "params":{
+            "taz":{
+               "po_0": {
+                  "id": "po_0",
+                  "driver": {
+                     "stop_work_distribution": {
+                        "hurry": 0.00002,
+                        "normal": 0.0001,
+                        "greedy": 0.0002
+                     }
+                  }
+               },
+               "po_1": {
+                  "id": "po_1",
+                  "driver": {
+                     "stop_work_distribution": {
+                        "hurry": 0.00002,
+                        "normal": 0.0001,
+                        "greedy": 0.0002
+                     }
+                  }
+               },
+               "po_2": {
+                  "id": "po_2",
+                  "driver": {
+                     "stop_work_distribution": {
+                        "hurry": 0.00002,
+                        "normal": 0.0001,
+                        "greedy": 0.0002
+                     }
+                  }
+               },
+               "po_3": {
+                  "id": "po_3",
+                  "driver": {
+                     "stop_work_distribution": {
+                        "hurry": 0.00002,
+                        "normal": 0.0001,
+                        "greedy": 0.0002
+                     }
+                  }
+               }
+            }
+         }
+      }
+   ]
+}

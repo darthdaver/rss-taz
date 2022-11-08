@@ -22,6 +22,8 @@ class Ride(str, Enum):
     ROUTES = "routes"
     RIDE_STATE = "state"
     ROUTE_LENGTH_DISTRIBUTION = "route_length_distribution"
+    INCREMENT = "increment"
+    RIDE_LENGTH = "ride_length"
     RIDE_STATS = "stats"
     STAT_TIMESTAMP_REQUEST = "timestamp_request"
     STAT_TIMESTAMP_ON_ROAD = "timestamp_on_road"

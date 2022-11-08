@@ -6,12 +6,12 @@
     "type": "HUMAN_PERSONALITY_POLICY",
     "params": {
       "agent_type": "driver",
-      "initial_human_personality_policy": [[0.1,"HURRY"],[0.2,"GREEDY"],[1,"NORMAL"]],
+      "initial_human_personality_policy": [[0.1,"hurry"],[0.2,"greedy"],[1,"normal"]],
       "operation": "increment",
       "value": {
-        "HURRY": -0.0002,
-        "GREEDY": 0.0014,
-        "NORMAL": 0.0
+        "hurry": -0.0002,
+        "greedy": 0.0014,
+        "normal": 0.0
       },
       "areas": []
     }
@@ -24,12 +24,12 @@
       "agent_type": "driver",
       "operation": "change",
       "value": {
-        "HURRY": {
-          "NORMAL": 0.3
+        "hurry": {
+          "normal": 0.3
         },
-        "GREEDY": {},
-        "NORMAL": {
-          "GREEDY": 0.5
+        "greedy": {},
+        "normal": {
+          "greedy": 0.5
         }
       },
       "areas": []

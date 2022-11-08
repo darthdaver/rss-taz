@@ -10,3 +10,5 @@ class Customer(str, Enum):
     DST_EDGE_ID = "dst_edge_id"
     DST_POS = "dst_pos"
     ACCEPTANCE_DISTRIBUTION = "acceptance_distribution"
+    PROBABILITY_GENERATION = "probability_generation"
+    PERSONALITY_DISTRIBUTION = "personality_distribution"
