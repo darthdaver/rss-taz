@@ -585,50 +585,53 @@ class Simulator:
     ):
         driver = self.__drivers[driver_id]
         driver_edge_id = traci.vehicle.getRoute(driver_id)[traci.vehicle.getRouteIndex(driver_id)]
+        driver_edge_road_id = traci.vehicle.getRoadID(driver_id)
+        driver_road_edge = self.__sumo_net.getEdge(driver_edge_road_id)
         driver_pos = traci.vehicle.getLanePosition(driver_id)
-        try:
-            random_route = self.__generate_driver_random_route(
-                timestamp,
-                driver_id,
-                dst_taz_id
-            )
-            driver_edge_id = traci.vehicle.getRoute(driver_id)[traci.vehicle.getRouteIndex(driver_id)]
-            src_taz_id = self.__net.get_taz_id_from_edge_id(driver_edge_id, NetType.BOUNDARY_NET)
-            if random_route is not None:
-                driver.set_route(random_route)
-                driver.set_state(DriverState.MOVING)
-                self.__drivers_by_state[DriverState.IDLE.value].remove(driver_id)
-                self.__drivers_by_state[DriverState.MOVING.value].append(driver_id)
-                self.__statistics.drivers_stats.moving_to_taz(
+        if not driver_road_edge.isSpecial():
+            try:
+                random_route = self.__generate_driver_random_route(
                     timestamp,
                     driver_id,
-                    src_taz_id,
                     dst_taz_id
                 )
-                # print(f"Move driver {driver_id} to area {dst_taz_id}")
-            else:
+                driver_edge_id = traci.vehicle.getRoute(driver_id)[traci.vehicle.getRouteIndex(driver_id)]
+                src_taz_id = self.__net.get_taz_id_from_edge_id(driver_edge_id, NetType.BOUNDARY_NET)
+                if random_route is not None:
+                    driver.set_route(random_route)
+                    driver.set_state(DriverState.MOVING)
+                    self.__drivers_by_state[DriverState.IDLE.value].remove(driver_id)
+                    self.__drivers_by_state[DriverState.MOVING.value].append(driver_id)
+                    self.__statistics.drivers_stats.moving_to_taz(
+                        timestamp,
+                        driver_id,
+                        src_taz_id,
+                        dst_taz_id
+                    )
+                    # print(f"Move driver {driver_id} to area {dst_taz_id}")
+                else:
+                    self.__remove_driver(
+                        timestamp,
+                        driver_id,
+                        DriverRemotionIdentifier.ROUTE_NOT_FOUND
+                    )
+                    driver_taz_id = self.__net.get_taz_id_from_edge_id(driver_edge_id)
+                    self.__statistics.global_indicators.sim_failure(
+                        timestamp,
+                        driver_taz_id
+                    )
+            except:
                 self.__remove_driver(
                     timestamp,
                     driver_id,
-                    DriverRemotionIdentifier.ROUTE_NOT_FOUND
+                    DriverRemotionIdentifier.SET_ROUTE_FAILED
                 )
                 driver_taz_id = self.__net.get_taz_id_from_edge_id(driver_edge_id)
                 self.__statistics.global_indicators.sim_failure(
                     timestamp,
                     driver_taz_id
                 )
-        except:
-            self.__remove_driver(
-                timestamp,
-                driver_id,
-                DriverRemotionIdentifier.SET_ROUTE_FAILED
-            )
-            driver_taz_id = self.__net.get_taz_id_from_edge_id(driver_edge_id)
-            self.__statistics.global_indicators.sim_failure(
-                timestamp,
-                driver_taz_id
-            )
-            return
+                return
 
     def __perform_scenario_event(
             self,
@@ -1062,17 +1065,14 @@ class Simulator:
             traci.vehicle.setStop(driver_id, dst_edge_id, stop_pos, duration=duration, flags=flags)
         except:
             old_route_edge_id_list = driver_current_route[driver_current_route_idx:]
+            traci.vehicle.setRoute(driver_id, old_route_edge_id_list)
             old_route = self.__net.generate_sim_route_from_edge_id_list(
                 timestamp,
-                old_route_edge_id_list,
+                list(traci.vehicle.getRoute(driver_id)),
                 driver_current_pos,
                 driver_dst_pos
             )
             driver.set_route(old_route)
-            traci.vehicle.setRoute(driver_id, old_route_edge_id_list)
-            print("ccccc")
-            print(old_route_edge_id_list)
-            print(driver_id)
             raise Exception(f"Simulation.__set_driver_route - Impossible to set driver route for {driver_id}")
         driver.set_route_destination_position(stop_pos)
 
@@ -1193,12 +1193,14 @@ class Simulator:
             driver_info = driver.get_info()
             driver_state = driver_info[DriverIdentifiers.DRIVER_STATE.value]
             driver_edge_id = traci.vehicle.getRoute(driver_id)[traci.vehicle.getRouteIndex(driver_id)]
+            driver_current_road_id = traci.vehicle.getRoadID(driver_id)
+            driver_road_edge = self.__sumo_net.getEdge(driver_current_road_id)
             driver_taz_id = self.__net.get_taz_id_from_edge_id(driver_edge_id, NetType.BOUNDARY_NET)
             driver_taz_info = self.__net.get_taz_info(driver_taz_id)
             driver.update_current_edge(driver_edge_id)
             if driver_state == DriverState.MOVING:
                 assert not driver_info[DriverIdentifiers.ROUTE.value] == None, "Simulator.updateDrivers - unexpected moving driver without route"
-                if self.__net.is_arrived(driver_info):
+                if self.__net.is_arrived(driver_info) and not driver_road_edge.isSpecial():
                     try:
                         random_route, driver_info = __start_new_random_route(driver_info)
                         if random_route is not None:
@@ -1253,10 +1255,11 @@ class Simulator:
                             DriverRemotionIdentifier.UNPROFITABLE_SURGE_MULTIPLIER
                         )
                         return
-                if self.__net.is_arrived(driver_info):
+                if self.__net.is_arrived(driver_info) and not driver_road_edge.isSpecial():
                     try:
                         random_route, driver_info = __start_new_random_route(driver_info)
                         if random_route is not None:
+
                             driver.set_route(random_route)
                         else:
                             if driver_state == DriverState.RESPONDING:
@@ -1613,11 +1616,11 @@ class Simulator:
                         type,
                         params
                     )
-                start = time.perf_counter()
-                self.__update_tazs(timestamp)
-                finish = time.perf_counter()
-                simulation_performances["updated_tazs"] = round(finish - start, 4)
-                print(f"Updated tazs statistics in {round(finish - start, 4)} second(s).")
+                #start = time.perf_counter()
+                #self.__update_tazs(timestamp)
+                #finish = time.perf_counter()
+                #simulation_performances["updated_tazs"] = round(finish - start, 4)
+                #print(f"Updated tazs statistics in {round(finish - start, 4)} second(s).")
                 if timestamp > 0 and timestamp % 1000.0 == 0:
                     self.export_statistics()
                 if timestamp > 0 and timestamp % self.__simulator_setup[ConfigEnum.CHECKPOINTS.value][ConfigEnum.SIMULATION_DURATION.value] == 0:
