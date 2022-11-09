@@ -121,7 +121,6 @@ class Simulator:
                 if not driver_id in current_drivers_list:
                     # print(f"Sumo forced {driver_id} remotion.")
                     driver_info = self.__drivers[driver_id].get_info()
-                    print(driver_info)
                     self.__remove_driver_by_state(
                         timestamp,
                         driver_id,
