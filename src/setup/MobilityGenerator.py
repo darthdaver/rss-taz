@@ -164,19 +164,6 @@ class MobilityGenerator():
             timestamp: float,
             customer_uniform_distribution: list[int]
     ):
-        scenario_events = self.__scenario.check_events(
-            timestamp,
-            ScenarioIdentifier.MOBILITY_PLANNER
-        )
-        for type, params in scenario_events:
-            self.__perform_scenario_event(
-                timestamp,
-                taz_id,
-                customer_uniform_distribution,
-                HumanType.CUSTOMER,
-                type,
-                params,
-            )
         taz_info: TazInfo = self.__net.get_taz_info(
             taz_id,
             NetType.MOBILITY_NET
@@ -203,19 +190,6 @@ class MobilityGenerator():
             timestamp: float,
             driver_uniform_distribution: list[int]
     ):
-        scenario_events = self.__scenario.check_events(
-            timestamp,
-            ScenarioIdentifier.MOBILITY_PLANNER
-        )
-        for type, params in scenario_events:
-            self.__perform_scenario_event(
-                timestamp,
-                taz_id,
-                driver_uniform_distribution,
-                HumanType.DRIVER,
-                type,
-                params
-            )
         taz_info: TazInfo = self.__net.get_taz_info(
             taz_id,
             NetType.MOBILITY_NET
@@ -425,9 +399,9 @@ class MobilityGenerator():
             if taz_id in tazs:
                 taz_param = tazs[taz_id]
                 begin = params[ScenarioIdentifier.BEGIN.value]
-                driver_param = taz_param[ScenarioIdentifier.DRIVER.value]
+                driver_param = taz_param[ScenarioIdentifier.MOBILITY_DRIVER.value]
                 probability_generation = driver_param[DriverIdentifiers.PROBABILITY_GENERATION.value]
-                personality_increment = taz_param[ScenarioIdentifier.INCREMENT.value]
+                personality_increment = driver_param[ScenarioIdentifier.INCREMENT.value]
                 initial_personality_distribution = driver_param[DriverIdentifiers.PERSONALITY_DISTRIBUTION.value]
                 new_personality_distribution = []
                 for incremental_probability, personality in initial_personality_distribution:

@@ -640,7 +640,7 @@ class Simulator:
     ):
         if type == EventType.DRIVER_STOP_WORK:
             tazs = params[ScenarioIdentifier.TAZ.value]
-            for taz_id, taz_params in tazs:
+            for taz_id, taz_params in tazs.items():
                 driver_param = taz_params[ScenarioIdentifier.DRIVER.value]
                 stop_work_distribution = driver_param[DriverIdentifiers.STOP_WORK_DISTRIBUTION.value]
                 self.__net.update_stop_work_distribution_in_taz(
@@ -649,7 +649,7 @@ class Simulator:
                 )
         if type == EventType.SLOW_DOWN_SPEED:
             tazs = params[ScenarioIdentifier.TAZ.value]
-            for taz_id, taz_params in tazs:
+            for taz_id, taz_params in tazs.items():
                 taz_info = self.__net.get_taz_info(taz_id)
                 slow_down_begin = taz_params[ScenarioIdentifier.SLOW_DOWN.value][ScenarioIdentifier.BEGIN.value]
                 slow_down_end = taz_params[ScenarioIdentifier.SLOW_DOWN.value][ScenarioIdentifier.END.value]
@@ -661,11 +661,11 @@ class Simulator:
                         traci.edge.setMaxSpeed(edge_id, speed)
         if type == EventType.SPEED_UP:
             tazs = params[ScenarioIdentifier.TAZ.value]
-            for taz_id, taz_params in tazs:
+            for taz_id, taz_params in tazs.items():
                 taz_info = self.__net.get_taz_info(taz_id)
-                speed_up_begin = taz_params[ScenarioIdentifier.SLOW_DOWN.value][ScenarioIdentifier.BEGIN.value]
-                speed_up_end = taz_params[ScenarioIdentifier.SLOW_DOWN.value][ScenarioIdentifier.END.value]
-                speed_up_rate = taz_params[ScenarioIdentifier.SLOW_DOWN.value][ScenarioIdentifier.RATE.value]
+                speed_up_begin = taz_params[ScenarioIdentifier.SPEED_UP.value][ScenarioIdentifier.BEGIN.value]
+                speed_up_end = taz_params[ScenarioIdentifier.SPEED_UP.value][ScenarioIdentifier.END.value]
+                speed_up_rate = taz_params[ScenarioIdentifier.SPEED_UP.value][ScenarioIdentifier.RATE.value]
                 if speed_up_begin <= timestamp <= speed_up_end:
                     for edge_id in taz_info[NetIdentifier.EDGES.value]:
                         edge = self.__sumo_net.getEdge(edge_id)

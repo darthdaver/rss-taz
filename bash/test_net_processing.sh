@@ -6,3 +6,4 @@ python3 scenario_generator.py
 python3 mobility_generator.py -b 0 -e 2000 -n ./net_config/city.net.xml
 mkdir -p "$PWD/data/city/mobility/sim/xml"
 ./sumo_tools/duarouter -n ./net_config/city.net.xml -r ./data/city/mobility/test/xml/city_test_mobility.xml --ignore-errors=True --repair=True -o ./data/city/mobility/sim/xml/mobility_simulator.rou.xml
+python3 runner.py --nogui

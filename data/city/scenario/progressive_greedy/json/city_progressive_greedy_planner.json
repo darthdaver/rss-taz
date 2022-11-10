@@ -9,7 +9,7 @@
                 "taz": {
                     "po_0": {
                         "id": "po_0",
-                        "driver": {
+                        "mobility_driver": {
                             "probability_generation": 1,
                             "personality_distribution": [
                                 [
@@ -17,24 +17,24 @@
                                     "hurry"
                                 ],
                                 [
-                                    0.35,
+                                    0.5,
                                     "greedy"
                                 ],
                                 [
-                                    0.35,
+                                    1,
                                     "normal"
                                 ]
                             ],
                             "increment": {
                                 "hurry": -0.0002,
                                 "greedy": 0.0003,
-                                "normal": -0.0002
+                                "normal": 0
                             }
                         }
                     },
                     "po_1": {
                         "id": "po_1",
-                        "driver": {
+                        "mobility_driver": {
                             "probability_generation": 1,
                             "personality_distribution": [
                                 [
@@ -42,24 +42,24 @@
                                     "hurry"
                                 ],
                                 [
-                                    0.35,
+                                    0.5,
                                     "greedy"
                                 ],
                                 [
-                                    0.35,
+                                    1,
                                     "normal"
                                 ]
                             ],
                             "increment": {
                                 "hurry": -0.0002,
                                 "greedy": 0.0003,
-                                "normal": -0.0002
+                                "normal": 0
                             }
                         }
                     },
                     "po_2": {
                         "id": "po_2",
-                        "driver": {
+                        "mobility_driver": {
                             "probability_generation": 1,
                             "personality_distribution": [
                                 [
@@ -67,24 +67,24 @@
                                     "hurry"
                                 ],
                                 [
-                                    0.35,
+                                    0.5,
                                     "greedy"
                                 ],
                                 [
-                                    0.35,
+                                    1,
                                     "normal"
                                 ]
                             ],
                             "increment": {
                                 "hurry": -0.0002,
                                 "greedy": 0.0003,
-                                "normal": -0.0002
+                                "normal": 0
                             }
                         }
                     },
                     "po_3": {
                         "id": "po_3",
-                        "driver": {
+                        "mobility_driver": {
                             "probability_generation": 1,
                             "personality_distribution": [
                                 [
@@ -92,18 +92,18 @@
                                     "hurry"
                                 ],
                                 [
-                                    0.35,
+                                    0.5,
                                     "greedy"
                                 ],
                                 [
-                                    0.35,
+                                    1,
                                     "normal"
                                 ]
                             ],
                             "increment": {
                                 "hurry": -0.0002,
                                 "greedy": 0.0003,
-                                "normal": -0.0002
+                                "normal": 0
                             }
                         }
                     }

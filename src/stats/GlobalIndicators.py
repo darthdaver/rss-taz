@@ -19,6 +19,7 @@ class GlobalIndicators:
             taz_ids: list[str]
     ):
         sim_duration = sim_duration + 1
+        self.taz_ids = taz_ids
         self.__requested = { k: { t: 0 for t in taz_ids } for k in range(0,sim_duration) }
         self.__canceled = { k: { t: 0 for t in taz_ids } for k in range(0,sim_duration) }
         self.__accepted = { k: { t: 0 for t in taz_ids } for k in range(0,sim_duration) }
@@ -177,8 +178,11 @@ class GlobalIndicators:
     ):
         self.__on_road_customers[int(timestamp)][taz_id] = num
 
-    def export_global_indicators(self):
-        output_absolute_path = utils.generate_absolute_path_to_file(
+    def export_global_indicators(
+            self,
+            interval: int = 1
+    ):
+        output_json_absolute_path = utils.generate_absolute_path_to_file(
             Paths.SIM_OUTPUT,
             FileName.GLOBAL_INDICATORS,
             FileFormat.JSON,
@@ -186,7 +190,48 @@ class GlobalIndicators:
             CITY
         )
         utils.export_file_from_absolute_path(
-            output_absolute_path,
+            output_json_absolute_path,
             FileFormat.JSON,
             self.get_global_indicators_info()
         )
+        output_csv_absolute_path = utils.generate_absolute_path_to_file(
+            Paths.SIM_OUTPUT,
+            FileName.GLOBAL_INDICATORS,
+            FileFormat.CSV,
+            SCENARIO,
+            CITY
+        )
+        utils.export_file_from_absolute_path(
+            output_csv_absolute_path,
+            FileFormat.CSV,
+            self.convert_json_global_indicators_to_csv(interval)
+        )
+
+
+    def convert_json_global_indicators_to_csv(
+            self,
+            interval: int = 1
+    ):
+        g_i_dict = self.get_global_indicators_info()
+        header = ""
+        content = ""
+        indicators_list_dict = {}
+        csv_rows = []
+        keys = g_i_dict.keys()
+        for k_idx, k in enumerate(keys):
+            header += f"{k}," if (k_idx < (len(keys) - 1)) else f"{k}"
+            g_i_k_dict = g_i_dict[k]
+            timestamps = [int(t) for t in g_i_k_dict.keys()]
+            indicator_list = []
+            for timestamp in range(interval, timestamps[-1]):
+                indicator_sum = 0
+                for taz_id in self.taz_ids:
+                    for i in range(timestamp - interval, timestamp):
+                        indicator_sum += g_i_k_dict[i][taz_id]
+                indicator_list.append(indicator_sum)
+            indicators_list_dict[k] = indicator_list
+        csv_rows = list(zip(*indicators_list_dict.values()))
+        content += f"{header}\n"
+        for row in csv_rows:
+            content += f"{','.join(str(x) for x in row)}\n"
+        return content

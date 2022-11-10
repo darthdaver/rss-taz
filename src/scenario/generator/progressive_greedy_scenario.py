@@ -35,7 +35,7 @@ def progressive_greedy_scenario(params: ScenarioProgressiveGreedyParams):
             taz_param = progressive_greedy_event[ScenarioIdentifier.PARAMS.value][ScenarioIdentifier.TAZ.value]
             taz_param[taz_id] = {
                 ScenarioIdentifier.ID.value: taz_id,
-                ScenarioIdentifier.DRIVER.value: params[ScenarioIdentifier.DRIVER.value]
+                ScenarioIdentifier.MOBILITY_DRIVER.value: params[ScenarioIdentifier.DRIVER.value]
             }
     scenario_dict[ScenarioIdentifier.MOBILITY_PLANNER.value].append(
         progressive_greedy_event

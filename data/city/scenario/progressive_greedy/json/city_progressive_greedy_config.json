@@ -16,18 +16,18 @@
             "hurry"
          ],
          [
-            0.35,
+            0.5,
             "greedy"
          ],
          [
-            0.35,
+            1,
             "normal"
          ]
       ],
       "increment":{
          "hurry":-0.0002,
          "greedy":0.0003,
-         "normal":-0.0002
+         "normal":0
       }
    }
 }

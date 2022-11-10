@@ -24,3 +24,5 @@ class Statistic(str, Enum):
     ON_ROAD_CUSTOMERS = "on_road_customers"
     SIM_FAILURE_REJECTIONS = "sim_failure_rejections"
     SIM_FAILURE = "sim_failure"
+    DRIVERS_CANDIDATE = "drivers_candidate"
+    TIMESTAMP = "timestamp"
