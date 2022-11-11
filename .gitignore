@@ -18,7 +18,7 @@ data/city/net/sim
 data/city/net/taz/*
 !data/city/net/taz/boundary/test/xml
 !data/city/net/taz/centroids/test/json
-data/city/output
+!data/city/output
 !data/sf
 data/sf/mobility/*
 data/sf/net/edge
@@ -30,8 +30,7 @@ data/sf/output
 data/sf/mobility/uber/*
 !data/sf/mobility/uber/json
 
-
-output
+/output
 logfile.txt
 traci_logfile.txt
 
