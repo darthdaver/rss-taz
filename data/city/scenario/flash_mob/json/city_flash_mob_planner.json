@@ -1,0 +1,56 @@
+{
+    "name": "normal",
+    "mobility_planner": [],
+    "simulation_planner": [
+        {
+            "begin": 2600.0,
+            "end": 3000.0,
+            "type": "SLOW_DOWN_SPEED",
+            "params": {
+                "taz": {
+                    "po_1": {
+                        "id": "po_1",
+                        "slow_down": {
+                            "begin": 2600,
+                            "end": 3000,
+                            "rate": 0.00225
+                        }
+                    },
+                    "po_0": {
+                        "id": "po_0",
+                        "slow_down": {
+                            "begin": 2700,
+                            "end": 3000,
+                            "rate": 0.003
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "begin": 3100.0,
+            "end": 3500.0,
+            "type": "SPEED_UP",
+            "params": {
+                "taz": {
+                    "po_1": {
+                        "id": "po_1",
+                        "speed_up": {
+                            "begin": 2600,
+                            "end": 3000,
+                            "rate": 0.00225
+                        }
+                    },
+                    "po_0": {
+                        "id": "po_0",
+                        "speed_up": {
+                            "begin": 3200,
+                            "end": 3500,
+                            "rate": 0.003
+                        }
+                    }
+                }
+            }
+        }
+    ]
+}
