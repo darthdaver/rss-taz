@@ -1,8 +1,8 @@
 {
    "mobility_intervals":[
       [
-         1000.0,
-         2000.0
+         2500.0,
+         3500.0
       ]
    ],
    "mobility_tazs":[

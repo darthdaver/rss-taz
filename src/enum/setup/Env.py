@@ -7,3 +7,5 @@ class Env(str, Enum):
     TRACI_PORT = "TRACI_PORT"
     CITY = "CITY"
     SCENARIO = "SCENARIO"
+    BEGIN = "BEGIN"
+    END = "END"

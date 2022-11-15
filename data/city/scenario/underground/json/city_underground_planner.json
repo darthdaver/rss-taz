@@ -7,15 +7,15 @@
             "type": "SUDDEN_REQUESTS",
             "params": {
                 "taz": {
-                    "p_0": {
-                        "id": "p_0",
-                        "requests": 40,
-                        "interval": 300
+                    "po_0": {
+                        "id": "po_0",
+                        "requests": 120,
+                        "interval": 600
                     },
-                    "p_1": {
-                        "id": "p_1",
-                        "requests": 30,
-                        "interval": 300
+                    "po_1": {
+                        "id": "po_1",
+                        "requests": 70,
+                        "interval": 500
                     }
                 }
             }

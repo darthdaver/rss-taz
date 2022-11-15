@@ -84,6 +84,7 @@ class SpecificIndicators:
             s_i_timestamp_rides_list = s_i_dict[timestamp]
             if not s_i_timestamp_rides_list == []:
                 for ride in s_i_timestamp_rides_list:
+                    content += f"{timestamp},"
                     content += f"{len(ride[RideIdentifier.REQUEST.value][StatisticIdentifier.DRIVERS_CANDIDATE.value])},"
                     content += f"{len(ride[RideIdentifier.REQUEST.value][StatisticIdentifier.REJECTIONS.value])},"
                     content += f"{round(ride[RideIdentifier.RIDE_STATS.value][RideIdentifier.STAT_EXPECTED_MEETING_LENGTH.value], 2)},"

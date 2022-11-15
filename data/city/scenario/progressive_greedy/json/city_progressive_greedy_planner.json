@@ -2,8 +2,8 @@
     "name": "normal",
     "mobility_planner": [
         {
-            "begin": 1000.0,
-            "end": 2000.0,
+            "begin": 2500.0,
+            "end": 3500.0,
             "type": "DRIVER_GENERATION",
             "params": {
                 "taz": {
